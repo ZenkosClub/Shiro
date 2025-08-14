@@ -323,9 +323,9 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
       isInit = false
       return true
     }
-
+    
     creloadHandler(false)
-  })
+  });
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
