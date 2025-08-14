@@ -27,7 +27,7 @@ if (!(global.conns instanceof Array)) global.conns = []
 
 let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
   if (m.isGroup) {
-    return m.reply('《✩》Para convertirte en *Sub-Bot* usa el comando en privado del bot.')
+    return m.reply('《✩》Para convertirte en *Sub-Bot* usa el comando en privado del bot.', m)
   }
   
   let time = global.db.data.users[m.sender].Subs + 120000
@@ -35,7 +35,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
   const subBotsCount = subBots.length
 
   if (subBotsCount === 20) {
-    return m.reply(`《✩》No se han encontrado espacios para *Sub-Bots* disponibles.`)
+    return m.reply(`《✩》No se han encontrado espacios para *Sub-Bots* disponibles.`, m)
   }
 
   let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
@@ -323,9 +323,9 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
       isInit = false
       return true
     }
-    
+
     creloadHandler(false)
-  });
+  })
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
