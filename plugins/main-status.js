@@ -34,7 +34,7 @@ let handler = async (m, { conn }) => {
   })
 }
 
-handler.command = ['status', 'ping']
+handler.command = ['status', 'p', 'ping']
 handler.help = ['status']
 handler.tags = ['main']
 export default handler
