@@ -27,7 +27,7 @@ if (!(global.conns instanceof Array)) global.conns = []
 
 let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
   if (m.isGroup) {
-    return m.reply('《✩》Para convertirte en *Sub-Bot* usa el comando en privado del bot.', m)
+    return m.reply('《✩》Para convertirte en *Sub-Bot* usa el comando en privado del bot.')
   }
   
   let time = global.db.data.users[m.sender].Subs + 120000
@@ -35,12 +35,12 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
   const subBotsCount = subBots.length
 
   if (subBotsCount === 20) {
-    return m.reply(`《✩》No se han encontrado espacios para *Sub-Bots* disponibles.`, m)
+    return m.reply(`《✩》No se han encontrado espacios para *Sub-Bots* disponibles.`)
   }
 
   let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
   let id = `${who.split`@`[0]}`
-  let pathAYBot = path.join(`./${bot}/`, id)
+  let pathAYBot = path.join(`./${global.bot}/`, id)
   if (!fs.existsSync(pathAYBot)) {
     fs.mkdirSync(pathAYBot, { recursive: true })
   }
@@ -230,15 +230,15 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
       if (global.db.data == null) loadDatabase()
 
       if (connection === 'open') {
-  if (!global.db.data?.users) loadDatabase()
-  let userName = sock.authState.creds.me.name
-  let userJid = sock.authState.creds.me.jid || `${path.basename(pathAYBot)}@s.whatsapp.net`
+        if (!global.db.data?.users) loadDatabase()
+        let userName = sock.authState.creds.me.name || 'Anónimo'
+        let userJid = sock.authState.creds.me.jid || `${path.basename(pathAYBot)}@s.whatsapp.net`
 
-  sock.isInit = true
-  sock.startTime = Date.now()
-  global.conns.push(sock)
-  await joinChannels(sock)
-}
+        console.log(chalk.bold.cyanBright(`\n🟢 ${userName} (+${path.basename(pathAYBot)}) conectado exitosamente.`))
+        sock.isInit = true
+        sock.startTime = Date.now() 
+        global.conns.push(sock)
+        await joinChannels(sock)
         
        
                 try {
@@ -260,7 +260,24 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
             fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2))
           }
           
-          const welcomeMessage = `Conectado a whatsapp`
+          const welcomeMessage = `╭─「 ✦ 𓆩🎉𓆪 ʙɪᴇɴᴠᴇɴɪᴅᴏ ✦ 」─╮
+│
+╰➺ ✧ *¡Felicidades!* 🎊
+╰➺ ✧ *Te has convertido en un Sub-Bot exitosamente*
+│
+╭─「 ✦ 𓆩🤖𓆪 ɪɴғᴏ ᴅᴇʟ sᴜʙ-ʙᴏᴛ ✦ 」─╮
+│
+╰➺ ✧ *Nombre:* ${nombreBot}
+╰➺ ✧ *Número:* +${botNumber}
+╰➺ ✧ *Usuario:* ${userName}
+╰➺ ✧ *Estado:* Conectado ✅
+╰➺ ✧ *Auto-leer:* Desactivado ❌
+│
+╰➺ ✧ *Comandos de configuración:*
+╰➺ ✧ *.setautoread on* - Activar auto-leer
+╰➺ ✧ *.setautoread off* - Desactivar auto-leer
+
+> LOVELLOUD Official`
 
           
           
@@ -274,8 +291,10 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
           }
           
         } catch (error) {
-  return
-}
+          console.error('Error enviando mensaje de bienvenida:', error)
+        }
+      }
+    }
 
     setInterval(async () => {
       if (!sock.user) {
