@@ -3,7 +3,7 @@ import path from 'path'
 import { join } from 'path'
 
 let handler = async (m, { conn, text }) => {
-   const botActual = conn.user?.jid?.split('@')[0]?.replace(/\D/g, '')
+   const botActual = (conn.user?.jid || '').replace(/[^0-9]/g, '')
 const configPath = join('./serbots', botActual, 'config.json')
 
 let names1 = global.namebot1 || 'Shiro'  
