@@ -158,7 +158,7 @@ async function handleLogin() {
 
   if (loginMethod === 'code') {
     let phoneNumber = await question(chalk.blue('Ingresa el número de WhatsApp donde estará el bot (incluye código país, ej: 521XXXXXXXXXX):\n'))
-    phoneNumber = phoneNumber.replace(/\D/g, '')
+    phoneNumber = phoneNumber.replace(/\D/g, '') // Solo números
 
     
     if (phoneNumber.startsWith('52') && phoneNumber.length === 12) {
@@ -417,7 +417,7 @@ global.reconnectSubBots = async function() {
 
   const serbotDir = './serbots'
   if (!existsSync(serbotDir)) {
-    console.log(chalk.yellow('No se encontró la carpeta serbots'))
+    console.log(chalk.yellow('No se encontró la carpeta Serbot'))
     return
   }
 
@@ -427,7 +427,7 @@ global.reconnectSubBots = async function() {
   })
 
   if (subBotFolders.length === 0) {
-    console.log(chalk.yellow('No se encontraron subbots para reconectar'))
+    console.log(chalk.yellow('No se encontraron sub-bots para reconectar'))
     return
   }
 
@@ -465,7 +465,7 @@ global.reconnectSubBots = async function() {
           command: 'qr',
           fromCommand: false
         })
-        console.log(chalk.green(`Subbot ${folder} reconectado exitosamente`))
+        console.log(chalk.green(`Sub-bot ${folder} reconectado exitosamente`))
       } else {
         console.log(chalk.red(`No se pudo importar AYBot para ${folder}`))
       }
@@ -478,7 +478,7 @@ global.reconnectSubBots = async function() {
     }
   }
 
-  console.log(chalk.cyan(`\nProceso de reconexión de subbots completado`))
+  console.log(chalk.cyan(`\nProceso de reconexión de sub-bots completado`))
 }
 
 
@@ -504,4 +504,4 @@ setTimeout(() => {
     console.log(chalk.cyan('\nIniciando reconexión automática de sub-bots..'))
     global.reconnectSubBots().catch(console.error)
   }
-}, 10000) 
+}, 10000)
