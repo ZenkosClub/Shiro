@@ -4,12 +4,9 @@ import { fileURLToPath } from 'url'
 
 global.owner = [
   ['51942501966', 'Mateo', true],
-  ['51901437507', 'Sunkovv', true],
 ]
 
-
 global.ownerLid = [
-  ['114263544885392', 'Sunkovv', true],
   ['78186205446362', 'Mateo', true],
 ]
 
