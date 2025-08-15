@@ -301,20 +301,16 @@ global.reloadHandler = async function (restartConn) {
 
   if (restartConn) {
     try {
-      if (global.conn.ws) global.conn.ws.close()
+      if (global.conn?.ws?.readyState === ws.OPEN) {
+        global.conn.ev.removeAllListeners()
+        console.log(chalk.yellow('Recargando handler sin cerrar sesión del bot principal...'))
+      }
     } catch {}
-    global.conn.ev.removeAllListeners()
-    
-    
     const preservedStartTime = global.conn.startTime
-    
     global.conn = makeWASocket(connectionOptions)
-    
-   
     if (preservedStartTime) {
       global.conn.startTime = preservedStartTime
     }
-    
     isInit = true
   }
 
@@ -491,12 +487,8 @@ connectionUpdate = async function(update) {
     this.subBotsReconnected = true
     console.log(chalk.cyan('\nBot principal conectado, iniciando reconexión de sub-bots...'))
     setTimeout(() => {
-      global.reloadHandler().then(() => {
-        global.reconnectSubBots().catch(console.error)
-      })
-    }, 5000) 
-  }
-}
+  global.reconnectSubBots().catch(console.error)
+}, 5000)
 
 
 setTimeout(() => {
