@@ -66,7 +66,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╶͜─ׄ͜─ׄ͜─❈┈╯
 > ✐ Comandos de *owner* para funciones exclusivas.
 ➨ #update #fix
-Actualiza todo lo del bot.
+> ❈ Actualiza todo lo del bot.
 `.trim()
 
     await conn.sendMessage(m.chat, {
