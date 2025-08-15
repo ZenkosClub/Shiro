@@ -22,7 +22,7 @@ if (fs.existsSync(configPath)) {
   }
   
   const senderNumber = m.sender.replace(/[^0-9]/g, '')
-  const botPath = path.join('./Serbot', senderNumber)
+  const botPath = path.join('./serbots', senderNumber)
 
   if (!fs.existsSync(botPath)) {
     return conn.reply(m.chat, `《✩》Solo el *socket* del dueño del número puede ejecutar este comando.`, m)
