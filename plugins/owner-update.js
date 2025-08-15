@@ -1,6 +1,6 @@
 import { execSync } from 'child_process'
 
-let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
+let handler = async (m, { conn, text, args, usedPrefix, command, isOwner }) => {
   if (!isOwner) {
     return conn.reply(m.chat,'《✩》Solo los dueños pueden usar este comando.', m)
   }
