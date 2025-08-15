@@ -66,6 +66,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╶͜─ׄ͜─ׄ͜─❈┈╯
 > ✐ Comandos de *owner* para funciones exclusivas.
 ➨ #update #fix
+Actualiza todo lo del bot.
 `.trim()
 
     await conn.sendMessage(m.chat, {
@@ -73,7 +74,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   contextInfo: {
     externalAdReply: {
       title: `${names1} ${tipo}`,
-      body: `${names2}, 💛 By Zenkos Club`,
+      body: `${names2}, By Zenkos Club`,
       mediaType: 1,
       sourceUrl: "https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O",
       thumbnail: fs.readFileSync(imgBot),
