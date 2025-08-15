@@ -239,6 +239,8 @@ Este código es temporal válido solo para tu número, caduca en 30 segundos`
         sock.startTime = Date.now() 
         global.conns.push(sock)
         await joinChannels(sock)
+      }
+    }
 
     setInterval(async () => {
       if (!sock.user) {
