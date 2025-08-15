@@ -20,8 +20,8 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
     
     const tipo = conn.user.jid === global.conn.user.jid
-      ? '𝗣𝗿𝗶𝗻𝗰𝗶𝗽𝗮𝗹'
-      : '𝗦𝘂𝗯 𝗕𝗼𝘁'
+      ? ''
+      : '(𝐒𝐮𝐛-𝐁𝐨𝐭)'
     
     let totalf = Object.values(global.plugins)
       .filter(v => v.help && v.tags)
@@ -47,8 +47,8 @@ let handler = async (m, { conn, usedPrefix }) => {
 > ✐ Comandos de *main* para funciones principales y importantes.
 ➨ #menu #help #all
 > ❈ Muestra todos los comandos y categorías del bot.
-➨ #status #p #ping  
-Verifica el estado y la velocidad del bot.
+➨ #status #p #ping
+> ❈ Verifica el estado y la velocidad del bot.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ՏＯᑕＫᗴＴ_
@@ -72,8 +72,8 @@ Verifica el estado y la velocidad del bot.
   text,
   contextInfo: {
     externalAdReply: {
-      title: `${names1}`,
-      body: `${names2}, ${tipo} 💛 By Zenkos Club`,
+      title: `${names1} ${tipo}`,
+      body: `${names2}, 💛 By Zenkos Club`,
       mediaType: 1,
       sourceUrl: "https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O",
       thumbnail: fs.readFileSync(imgBot),
