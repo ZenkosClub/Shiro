@@ -437,14 +437,13 @@ global.reconnectSubBots = async function() {
     try {
       const botPath = join(serbotDir, folder)
       const credsPath = join(botPath, 'creds.json')
-      
+
       if (!existsSync(credsPath)) {
         console.log(chalk.red(`No se encontró creds.json en ${folder}`))
         continue
       }
 
-     
-      const isAlreadyConnected = global.conns.some(conn => 
+      const isAlreadyConnected = global.conns.some(conn =>
         conn.user && conn.user.jid && conn.user.jid.includes(folder)
       )
 
@@ -453,24 +452,36 @@ global.reconnectSubBots = async function() {
         continue
       }
 
-      
       const serbotModule = await import('./plugins/socket-serbot.js')
       if (serbotModule.AYBot) {
-        await serbotModule.AYBot({
-          pathAYBot: botPath,
-          m: null,
-          conn: global.conn,
-          args: [],
-          usedPrefix: '.',
-          command: 'qr',
-          fromCommand: false
-        })
-        console.log(chalk.green(`Sub-bot ${folder} reconectado exitosamente`))
+        const startSubBot = async () => {
+          try {
+            await serbotModule.AYBot({
+              pathAYBot: botPath,
+              m: null,
+              conn: global.conn,
+              args: [],
+              usedPrefix: '.',
+              command: 'qr',
+              fromCommand: false
+            })
+            console.log(chalk.green(`Sub-bot ${folder} conectado`))
+          } catch (err) {
+            console.log(chalk.red(`Error en sub-bot ${folder}:`, err.message))
+            if (err.message && err.message.includes('401')) {
+              try {
+                unlinkSync(credsPath)
+                console.log(chalk.yellow(`Sesión inválida eliminada en ${folder}, regenerando...`))
+              } catch {}
+            }
+            setTimeout(startSubBot, 5000)
+          }
+        }
+        startSubBot()
       } else {
         console.log(chalk.red(`No se pudo importar AYBot para ${folder}`))
       }
 
-     
       await new Promise(resolve => setTimeout(resolve, 2000))
 
     } catch (error) {
@@ -481,27 +492,7 @@ global.reconnectSubBots = async function() {
   console.log(chalk.cyan(`\nProceso de reconexión de sub-bots completado`))
 }
 
-
-const originalConnectionUpdate = connectionUpdate
-connectionUpdate = async function(update) {
-  await originalConnectionUpdate.call(this, update)
-  
- 
-  if (update.connection === 'open' && !this.subBotsReconnected) {
-    this.subBotsReconnected = true
-    console.log(chalk.cyan('\nBot principal conectado, iniciando reconexión de sub-bots...'))
-    setTimeout(() => {
-      global.reloadHandler().then(() => {
-        global.reconnectSubBots().catch(console.error)
-      })
-    }, 5000) 
-  }
-}
-
-
 setTimeout(() => {
-  if (global.conn && global.conn.user) {
-    console.log(chalk.cyan('\nIniciando reconexión automática de sub-bots..'))
-    global.reconnectSubBots().catch(console.error)
-  }
+  console.log(chalk.cyan('\nIniciando reconexión automática de sub-bots..'))
+  global.reconnectSubBots().catch(console.error)
 }, 10000)
