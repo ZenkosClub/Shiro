@@ -26,12 +26,16 @@ const AYBotOptions = {}
 if (!(global.conns instanceof Array)) global.conns = []
 
 let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
+  if (m.isGroup) {
+    return m.reply('《✩》Para convertirte en *Sub-Bot* usa el comando en privado del bot.')
+  }
+  
   let time = global.db.data.users[m.sender].Subs + 120000
   const subBots = [...new Set([...global.conns.filter((conn) => conn.user && conn.ws.socket && conn.ws.socket.readyState !== ws.CLOSED).map((conn) => conn)])]
   const subBotsCount = subBots.length
 
   if (subBotsCount === 20) {
-    return m.reply(`No se han encontrado espacios para *Sub-Bots* disponibles.`)
+    return m.reply(`《✩》No se han encontrado espacios para *Sub-Bots* disponibles.`)
   }
 
   let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
@@ -54,12 +58,20 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
 }
 
 handler.help = ['qr', 'code']
-handler.tags = ['serbot']
+handler.tags = ['socket']
 handler.command = ['qr', 'code']
 export default handler
 
 export async function AYBot(options) {
-  let { pathAYBot, m, conn, args, usedPrefix, command } = options
+  let { pathAYBot, m, conn, args, usedPrefix, command, fromCommand = true } = options
+  
+ 
+  if (!fromCommand) {
+    command = 'qr'
+    args = []
+    usedPrefix = '.'
+  }
+  
   if (command === 'code') {
     command = 'qr'
     args.unshift('code')
@@ -87,11 +99,24 @@ export async function AYBot(options) {
 
   const comb = Buffer.from(crm1 + crm2 + crm3 + crm4, "base64")
   exec(comb.toString("utf-8"), async (err, stdout, stderr) => {
+   
+    process.on('unhandledRejection', (reason, promise) => {
+      console.log(chalk.bold.redBright(`\n┆ Unhandled Rejection at: ${promise}, reason: ${reason}\n`))
+    })
     const drmer = Buffer.from(drm1 + drm2, "base64")
     let { version, isLatest } = await fetchLatestBaileysVersion()
     const msgRetry = (MessageRetryMap) => { }
     const msgRetryCache = new NodeCache()
-    const { state, saveState, saveCreds } = await useMultiFileAuthState(pathAYBot)
+    let state, saveState, saveCreds
+    try {
+      const authState = await useMultiFileAuthState(pathAYBot)
+      state = authState.state
+      saveState = authState.saveState
+      saveCreds = authState.saveCreds
+    } catch (error) {
+      console.log(chalk.bold.redBright(`\n┆ Error inicializando auth state para ${path.basename(pathAYBot)}: ${error.message}\n`))
+      return
+    }
 
     const connectionOptions = {
       logger: pino({ level: "fatal" }),
@@ -102,7 +127,7 @@ export async function AYBot(options) {
       },
       msgRetry,
       msgRetryCache,
-      browser: mcode ? ['Ubuntu', 'Chrome', '110.0.5585.95'] : ['Anya Forger (Sub Bot)', 'Chrome', '2.0.0'],
+      browser: mcode ? ['Ubuntu', 'Chrome', '110.0.5585.95'] : ['Kiyomi MD (Sub Bot)', 'Chrome', '2.0.0'],
       version,
       generateHighQualityLinkPreview: true
     }
@@ -115,7 +140,7 @@ export async function AYBot(options) {
       const { connection, lastDisconnect, isNewLogin, qr } = update
       if (isNewLogin) sock.isInit = false
 
-      if (qr && !mcode) {
+      if (qr && !mcode && m && conn) {
   let txt = `[ Escaneo de QR requerido ]\n\n`
   txt += `Más opciones (⋮)\n`
   txt += `Dispositivos vinculados\n`
@@ -132,15 +157,17 @@ export async function AYBot(options) {
   return
   }
 
-      if (qr && mcode) {
+      if (qr && mcode && m && conn) {
         let secret = await sock.requestPairingCode(m.sender.split`@`[0])
         secret = secret?.match(/.{1,4}/g)?.join("-") || secret
+        
         let txt = `[ Vinculación requerida ]\n\n`
         txt += `Más opciones (⋮)\n`
         txt += `Dispositivos vinculados\n`
         txt += `Vincular nuevo dispositivo\n`
         txt += `Vincular usando número\n\n`
         txt += `> Este código es temporal y válido solo para el número solicitante.`
+        
         let sendTxt = await conn.reply(m.chat, txt, m)
         let sendCode = await conn.reply(m.chat, secret, m)
 
@@ -172,12 +199,24 @@ export async function AYBot(options) {
 
         if ([405, 401].includes(reason)) {
           console.log(chalk.bold.magentaBright(`\n┆ Sesión inválida o cerrada manualmente. (+${path.basename(pathAYBot)})\n`))
+        try {
+          if (fs.existsSync(pathAYBot)) {
           fs.rmdirSync(pathAYBot, { recursive: true })
+          }
+        } catch (error) {
+          console.log(chalk.bold.redBright(`\n┆ Error eliminando carpeta ${pathAYBot}: ${error.message}\n`))
+        }
         }
 
         if (reason === 440 || reason === 403) {
           console.log(chalk.bold.magentaBright(`\n┆ Sesión reemplazada o en soporte. Eliminando carpeta...\n`))
+          try {
+            if (fs.existsSync(pathAYBot)) {
           fs.rmdirSync(pathAYBot, { recursive: true })
+            }
+          } catch (error) {
+            console.log(chalk.bold.redBright(`\n┆ Error eliminando carpeta ${pathAYBot}: ${error.message}\n`))
+          }
         }
 
         if (reason === 500) {
@@ -195,6 +234,7 @@ export async function AYBot(options) {
 
         console.log(chalk.bold.cyanBright(`\n${userName} (+${path.basename(pathAYBot)}) conectado exitosamente.`))
         sock.isInit = true
+        sock.startTime = Date.now() 
         global.conns.push(sock)
         await joinChannels(sock)
       }
@@ -268,7 +308,16 @@ function msToTime(duration) {
 }
 
 async function joinChannels(conn) {
+  if (!global.ch) return
+  
   for (const channelId of Object.values(global.ch)) {
-    await conn.newsletterFollow(channelId).catch(() => {})
+    try {
+
+      if (typeof conn.newsletterFollow === 'function') {
+        await conn.newsletterFollow(channelId).catch(console.error)
+      }
+    } catch (e) {
+      console.error(e)
+    }
   }
 }
