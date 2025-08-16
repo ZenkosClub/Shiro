@@ -80,7 +80,8 @@ const allOwnerIds = [
 ]
 
 const isROwner = allOwnerIds.includes(m.sender)
-const isOwner = isROwner || m.fromMe  
+const isOwner = isROwner || (m.fromMe && this.user.jid === global.conn.user.jid)
+
 const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)  
 const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || _user?.prem == true  
 
@@ -121,17 +122,13 @@ global.rcanal = {
 }  
 
 let usedPrefix = '.'  
-
-
 let commandExecuted = false
-
 
 const processedPlugins = []
 for (let name in global.plugins) {
   let plugin = global.plugins[name]
   if (!plugin || plugin.disabled) continue
   
- 
   let normalizedPlugin = {
     name: name,
     handler: plugin.handler || plugin,
@@ -142,11 +139,9 @@ for (let name in global.plugins) {
     customPrefix: plugin.customPrefix
   }
   
-  
   if (typeof normalizedPlugin.command === 'string') {
     normalizedPlugin.command = [normalizedPlugin.command]
   }
-  
   
   if (normalizedPlugin.command instanceof RegExp) {
     normalizedPlugin.command = [normalizedPlugin.command.source]
@@ -158,7 +153,6 @@ for (let name in global.plugins) {
 for (let plugin of processedPlugins) {
   const __filename = join(___dirname, plugin.name)
 
-  
   if (typeof plugin.all === 'function') {
     try {
       await plugin.all.call(this, m, {
@@ -171,12 +165,10 @@ for (let plugin of processedPlugins) {
     }
   }
 
-  
   if (!opts['restrict']) {
     if (plugin.tags && plugin.tags.includes('admin')) continue
   }
 
-  
   const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
   let _prefix = plugin.customPrefix ? plugin.customPrefix : conn.prefix ? conn.prefix : global.prefix
   
@@ -199,7 +191,6 @@ for (let plugin of processedPlugins) {
   const [commandText, ...args] = noPrefix.split(/\s+/)
   const command = commandText?.toLowerCase()
 
- 
   const isMatchCommand = plugin.command && plugin.command.some(cmd => {
     if (typeof cmd === 'string') {
       return command === cmd.toLowerCase()
@@ -210,8 +201,6 @@ for (let plugin of processedPlugins) {
   })
 
   if (isMatchCommand) {
-    
-    
     const allowedPrivateCommands = ['qr', 'code', 'setbotname', 'setbotimg', 'setautoread']
     if (!m.isGroup && !allowedPrivateCommands.includes(command) && !isOwner) {
       return 
@@ -224,7 +213,6 @@ for (let plugin of processedPlugins) {
       }
     }
     
-   
     if (m.isGroup && global.db.data.antiImg && global.db.data.antiImg[m.chat] === true) {
       if (m.message && (m.message.imageMessage || m.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage)) {
         try {
@@ -326,7 +314,6 @@ try {
 
 const settingsREAD = global.db.data.settings[this.user.jid] || {}
 
-
 const isSubBot = this.user.jid !== global.conn.user.jid
 let shouldAutoRead = true
 
@@ -337,22 +324,18 @@ if (isSubBot) {
     
     if (existsSync(configPath)) {
       const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-     
       if (config.autoRead === false) {
         shouldAutoRead = false
       }
     }
   } catch (error) {
-   
     console.error('Error leyendo configuración de autoleer:', error)
   }
 }
 
-
 if (shouldAutoRead) {
   try {
     await this.readMessages([m.key])
-    
     if (m.isGroup) {
       await this.readMessages([m.key], { readEphemeral: true })
     }
