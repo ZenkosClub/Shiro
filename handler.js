@@ -213,17 +213,6 @@ for (let plugin of processedPlugins) {
       }
     }
     
-    if (m.isGroup && global.db.data.antiImg && global.db.data.antiImg[m.chat] === true) {
-      if (m.message && (m.message.imageMessage || m.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage)) {
-        try {
-          await this.sendMessage(m.chat, { delete: m.key })
-          return
-        } catch (error) {
-          console.error('Error eliminando imagen:', error)
-        }
-      }
-    }
-    
     commandExecuted = true
     try {
       await plugin.handler.call(this, m, {
@@ -314,37 +303,36 @@ try {
 
 const settingsREAD = global.db.data.settings[this.user.jid] || {}
 
-const isSubBot = this.user.jid !== global.conn.user.jid
-let shouldAutoRead = true
+const prefixes = ['.', '#', '!', '/'] 
 
-if (isSubBot) {
-  try {
-    const botNumber = this.user.jid.split('@')[0].replace(/\D/g, '')
-    const configPath = `./serbots/${botNumber}/config.json`
-    
-    if (existsSync(configPath)) {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      if (config.autoRead === false) {
-        shouldAutoRead = false
-      }
-    }
-  } catch (error) {
-    console.error('Error leyendo configuración de autoleer:', error)
+let isCommand = false
+let body = m.text || m.message?.conversation || ''
+for (let prefix of prefixes) {
+  if (body.startsWith(prefix)) {
+    isCommand = true
+    break
   }
 }
 
-if (shouldAutoRead) {
+if (isCommand) {
   try {
     await this.readMessages([m.key])
     if (m.isGroup) {
       await this.readMessages([m.key], { readEphemeral: true })
     }
-  } catch (e) {
-    console.error('Error al marcar como leído:', e)
-  }
-}
 
-}
+    if (global.conns && Array.isArray(global.conns)) {
+      for (let sub of global.conns) {
+        if (!sub || !sub.readMessages) continue
+        try {
+          await sub.readMessages([m.key])
+          if (m.isGroup) {
+            await sub.readMessages([m.key], { readEphemeral: true })
+          }
+        } catch {}
+      }
+    }
+  } catch {}
 }
 
 let file = global.__filename(import.meta.url, true)
