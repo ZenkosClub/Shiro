@@ -329,6 +329,9 @@ if (shouldAutoRead && (isCommand || isReplyCommand)) {
   }
 }
 
+}
+}
+
 let file = global.__filename(import.meta.url, true)
 watchFile(file, async () => {
 unwatchFile(file)
