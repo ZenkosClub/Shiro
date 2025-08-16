@@ -158,9 +158,8 @@ async function handleLogin() {
 
   if (loginMethod === 'code') {
     let phoneNumber = await question(chalk.blue('Ingresa el número de WhatsApp donde estará el bot (incluye código país, ej: 521XXXXXXXXXX):\n'))
-    phoneNumber = phoneNumber.replace(/\D/g, '') // Solo números
+    phoneNumber = phoneNumber.replace(/\D/g, '')
 
-    
     if (phoneNumber.startsWith('52') && phoneNumber.length === 12) {
       phoneNumber = `521${phoneNumber.slice(2)}`
     } else if (phoneNumber.startsWith('52')) {
@@ -171,7 +170,6 @@ async function handleLogin() {
 
     if (typeof conn.requestPairingCode === 'function') {
       try {
-        
         if (conn.ws.readyState === ws.OPEN) {
           let code = await conn.requestPairingCode(phoneNumber)
           code = code?.match(/.{1,4}/g)?.join('-') || code
@@ -249,11 +247,7 @@ async function connectionUpdate(update) {
   const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
   if (reason === 405) {
     if (existsSync('./sessions/creds.json')) unlinkSync('./sessions/creds.json')
-    console.log(
-      chalk.bold.redBright(
-        `Conexión reemplazada, por favor espera un momento. Reiniciando...\nSi aparecen errores, vuelve a iniciar con: npm start`
-      )
-    )
+    console.log(chalk.bold.redBright(`Conexión reemplazada, por favor espera un momento. Reiniciando...`))
     process.send('reset')
   }
   if (connection === 'close') {
@@ -268,9 +262,7 @@ async function connectionUpdate(update) {
         await global.reloadHandler(true).catch(console.error)
         break
       case DisconnectReason.connectionReplaced:
-        conn.logger.error(
-          `Conexión reemplazada, se abrió otra sesión. Cierra esta sesión primero.`
-        )
+        conn.logger.error(`Conexión reemplazada, se abrió otra sesión. Cierra esta sesión primero.`)
         break
       case DisconnectReason.loggedOut:
         conn.logger.error(`Sesión cerrada, elimina la carpeta ${global.authFile} y escanea nuevamente.`)
@@ -291,6 +283,7 @@ process.on('uncaughtException', console.error)
 
 let isInit = true
 let handler = await import('./handler.js')
+
 global.reloadHandler = async function (restartConn) {
   try {
     const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)
@@ -299,22 +292,16 @@ global.reloadHandler = async function (restartConn) {
     console.error(e)
   }
 
-  if (restartConn) {
+  if (restartConn && this === global.conn) {
     try {
       if (global.conn.ws) global.conn.ws.close()
     } catch {}
     global.conn.ev.removeAllListeners()
-    
-    
     const preservedStartTime = global.conn.startTime
-    
     global.conn = makeWASocket(connectionOptions)
-    
-   
     if (preservedStartTime) {
       global.conn.startTime = preservedStartTime
     }
-    
     isInit = true
   }
 
@@ -345,13 +332,8 @@ async function filesInit() {
     try {
       const file = global.__filename(join(pluginFolder, filename))
       const module = await import(file)
-      
-     
       let plugin = module.default || module
-      
-     
       if (typeof plugin === 'function') {
-       
         plugin = {
           handler: plugin,
           command: plugin.command || [],
@@ -360,14 +342,10 @@ async function filesInit() {
           disabled: false
         }
       }
-      
-      
       if (plugin.command && typeof plugin.command === 'string') {
         plugin.command = [plugin.command]
       }
-      
       global.plugins[filename] = plugin
-      
     } catch (e) {
       conn.logger.error(`Error cargando plugin ${filename}:`, e)
       delete global.plugins[filename]
@@ -409,8 +387,7 @@ Object.freeze(global.reload)
 watch(pluginFolder, global.reload)
 await global.reloadHandler()
 
-
-global.reconnectSubBots = async function() {
+global.reconnectSubBots = async function () {
   if (!global.conns || !Array.isArray(global.conns)) {
     global.conns = []
   }
@@ -454,30 +431,16 @@ global.reconnectSubBots = async function() {
 
       const serbotModule = await import('./plugins/socket-serbot.js')
       if (serbotModule.AYBot) {
-        const startSubBot = async () => {
-          try {
-            await serbotModule.AYBot({
-              pathAYBot: botPath,
-              m: null,
-              conn: global.conn,
-              args: [],
-              usedPrefix: '.',
-              command: 'qr',
-              fromCommand: false
-            })
-            console.log(chalk.green(`Sub-bot ${folder} conectado`))
-          } catch (err) {
-            console.log(chalk.red(`Error en sub-bot ${folder}:`, err.message))
-            if (err.message && err.message.includes('401')) {
-              try {
-                unlinkSync(credsPath)
-                console.log(chalk.yellow(`Sesión inválida eliminada en ${folder}, regenerando...`))
-              } catch {}
-            }
-            setTimeout(startSubBot, 5000)
-          }
-        }
-        startSubBot()
+        await serbotModule.AYBot({
+          pathAYBot: botPath,
+          m: null,
+          conn: global.conn,
+          args: [],
+          usedPrefix: '.',
+          command: 'qr',
+          fromCommand: false
+        })
+        console.log(chalk.green(`Sub-bot ${folder} reconectado exitosamente`))
       } else {
         console.log(chalk.red(`No se pudo importar AYBot para ${folder}`))
       }
@@ -492,7 +455,22 @@ global.reconnectSubBots = async function() {
   console.log(chalk.cyan(`\nProceso de reconexión de sub-bots completado`))
 }
 
+const originalConnectionUpdate = connectionUpdate
+connectionUpdate = async function (update) {
+  await originalConnectionUpdate.call(this, update)
+
+  if (update.connection === 'open' && !this.subBotsReconnected) {
+    this.subBotsReconnected = true
+    console.log(chalk.cyan('\nBot principal conectado, reconectando sub-bots sin reiniciar conexiones...'))
+    setTimeout(() => {
+      global.reconnectSubBots().catch(console.error)
+    }, 5000)
+  }
+}
+
 setTimeout(() => {
-  console.log(chalk.cyan('\nIniciando reconexión automática de sub-bots..'))
-  global.reconnectSubBots().catch(console.error)
+  if (global.conn && global.conn.user) {
+    console.log(chalk.cyan('\nIniciando reconexión automática de sub-bots..'))
+    global.reconnectSubBots().catch(console.error)
+  }
 }, 10000)
