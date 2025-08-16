@@ -301,38 +301,32 @@ try {
   console.log(m, m.quoted, e)  
 }  
 
-const settingsREAD = global.db.data.settings[this.user.jid] || {}
+const prefixes = ['.', '#', '!', '/']
+const isCommand = prefixes.some(p => m.text?.startsWith(p))
+const isReplyCommand = m.quoted && m.quoted.fromMe && prefixes.some(p => m.text?.startsWith(p))
 
-const prefixes = ['.', '#', '!', '/'] 
+const isSubBot = this.user.jid !== global.conn.user.jid
+let shouldAutoRead = true
 
-let isCommand = false
-let body = m.text || m.message?.conversation || ''
-for (let prefix of prefixes) {
-  if (body.startsWith(prefix)) {
-    isCommand = true
-    break
-  }
-}
-
-if (isCommand) {
+if (isSubBot) {
   try {
-    await this.readMessages([m.key])
-    if (m.isGroup) {
-      await this.readMessages([m.key], { readEphemeral: true })
-    }
-
-    if (global.conns && Array.isArray(global.conns)) {
-      for (let sub of global.conns) {
-        if (!sub || !sub.readMessages) continue
-        try {
-          await sub.readMessages([m.key])
-          if (m.isGroup) {
-            await sub.readMessages([m.key], { readEphemeral: true })
-          }
-        } catch {}
+    const botNumber = this.user.jid.split('@')[0].replace(/\D/g, '')
+    const configPath = `./serbots/${botNumber}/config.json`
+    
+    if (existsSync(configPath)) {
+      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
+      if (config.autoRead === false) {
+        shouldAutoRead = false
       }
     }
   } catch {}
+}
+
+if (shouldAutoRead && (isCommand || isReplyCommand)) {
+  await this.readMessages([m.key]).catch(() => {})
+  if (m.isGroup) {
+    await this.readMessages([m.key], { readEphemeral: true }).catch(() => {})
+  }
 }
 
 let file = global.__filename(import.meta.url, true)
