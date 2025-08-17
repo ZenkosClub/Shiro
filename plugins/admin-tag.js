@@ -1,42 +1,26 @@
-let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
+let handler = async (m, { conn, args, isAdmin, isOwner, isPrems }) => {
 
-  if (!m.isGroup) return conn.sendMessage(m.chat, {
-    text: '*[❗] Este comando solo puede ser usado en grupos.*',
-    contextInfo: {
-      ...rcanal.contextInfo
-    }
-  }, { quoted: m })
-  
+  if (!m.isGroup) return
   if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
-    text: '*[❗] Solo los administradores pueden usar este comando.*',
-    contextInfo: {
-      ...rcanal.contextInfo
-    }
+    text: '《✩》Solo los administradores pueden usar este comando.',
+    contextInfo: { ...m.contextInfo }
   }, { quoted: m })
-  
-  try {
 
+  try {
     const groupMetadata = await conn.groupMetadata(m.chat)
     const participants = groupMetadata.participants
-    
-    await conn.sendMessage(m.chat, { 
-      text: text || ' ',
+
+    await conn.sendMessage(m.chat, {
+      text: args?.join(' ') || ' ',
       mentions: participants.map(p => p.id)
     }, { quoted: m })
-    
+
   } catch (e) {
-    console.error('Error en comando tag-all:', e)
-    conn.sendMessage(m.chat, {
-      text: '*[❗] Ocurrió un error al intentar etiquetar a los miembros del grupo.*',
-      contextInfo: {
-        ...rcanal.contextInfo
-      }
-    }, { quoted: m })
+    console.error(e)
   }
 }
 
-handler.help = ['#tag']
-handler.tags = ['grupos']
-handler.command = ['tag', 'todos', 'mencionartodos']
-
+handler.command = ['tag', 'say', 'tagall']
+handler.help = ['tag']
+handler.tags = ['admin']
 export default handler
