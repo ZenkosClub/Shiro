@@ -44,7 +44,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗰᗩＩＮ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos de *main* para funciones principales y importantes.
+> ✐ Comandos *main* para funciones principales y importantes.
 ➨ #menu #help #all
 > ❈ Muestra todos los comandos y categorías del bot.
 ➨ #status #p #ping
@@ -53,7 +53,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ՏＯᑕＫᗴＴ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos de *socket* para gestionar conexión y datos.
+> ✐ Comandos *socket* para gestionar conexión y datos.
 ➨ #code #qr
 > ❈ Conecta un subbot por código o escaneando QR.
 ➨ #setbotname #setname
@@ -62,11 +62,18 @@ let handler = async (m, { conn, usedPrefix }) => {
 > ❈ Ver el número de bots activos.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
+   _ＡＤＭＩＮ_
+╶͜─ׄ͜─ׄ͜─❈┈╯
+> ✐ Comandos *admin* para grupos.
+➨ #kick #ban
+> ❈ Eliminar a un miembro del grupo
+
+╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗝᗯＮＥＲ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos de *owner* para funciones exclusivas.
+> ✐ Comandos *owner* para funciones exclusivas.
 ➨ #update #fix
-> ❈ Actualiza todo lo del bot.
+> ❈ Actualizar todo lo del bot.
 `.trim()
 
     await conn.sendMessage(m.chat, {
