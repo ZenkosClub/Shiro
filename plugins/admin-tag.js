@@ -17,7 +17,8 @@ let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
 
 }
 
-handler.command = ['tag', 'say', 'tagall']
-handler.help = ['tag']
-handler.tags = ['admin']
+handler.help = ['#tag']
+handler.tags = ['grupos']
+handler.command = ['tag', 'todos', 'mencionartodos']
+
 export default handler
