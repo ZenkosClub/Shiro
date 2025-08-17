@@ -64,8 +64,8 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ＡＤＭＩＮ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *admin* para grupos.
-➨ #kick #ban
+> ✐ Comandos *admin* para administradores del grupo.
+➨ #kick #eject
 > ❈ Eliminar a un miembro del grupo
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
