@@ -28,7 +28,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   const adminName = await conn.getName(m.sender)
 
   return conn.sendMessage(m.chat, { 
-    text: `《✩》Usuario promovido exitosamente a administrador.`, 
+    text: `《✩》Usuario promovido a administrador del grupo.`, 
     contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
