@@ -3,13 +3,13 @@ import { isJidGroup } from '@whiskeysockets/baileys'
 let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner, isPrems, usedPrefix, command }) => {
   if (!m.isGroup) return
   if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, { 
-    text: '《✧》Solo los administradores pueden usar este comando.', 
-    contextInfo: { ...rcanal.contextInfo } 
+    text: '《✩》Solo los administradores pueden usar este comando.', 
+    contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
   
   if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: `《✧》Debes mencionar al usuario que deseas banear.\n\n> Ejemplo: ${usedPrefix + command} @usuario`, 
-    contextInfo: { ...rcanal.contextInfo } 
+    text: `《✩》Debes mencionar al usuario que deseas sacar.`, 
+    contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
   const who = m.mentionedJid[0]
@@ -29,10 +29,12 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   const groupName = (await conn.groupMetadata(m.chat)).subject
 
   return conn.sendMessage(m.chat, { 
-    text: `✿ Usuario eliminado exitosamente.\n\n✰ Usuario: @${who.split('@')[0]}\n❏ Admin: @${m.sender.split('@')[0]}\n\n✐ Grupo: ${groupName}`, 
+    text: `《✩》@${who.split('@')[0]} usuario eliminado exitosamente del grupo.`, 
     contextInfo: { ...rcanal.contextInfo, mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
 
-handler.command = ['ban', 'kick']
+handler.command = ['kick', 'del']
+handler.help = ['kick']
+handler.tags = ['other']
 export default handler
