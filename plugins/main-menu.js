@@ -37,7 +37,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 │🜸 *Baileys* » Multi Devices
 ╰───────────
 
-https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O
+https://whatsapp.com/channel/0029VbAZUQ3002T9KZfx2O1M
 
 ╭─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜
 > ✿ Crea un *Sub-Bot* con tu número utilizando *#qr* o *#code*
@@ -91,7 +91,7 @@ https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O
       title: `${names1} ${tipo}`,
       body: `${names2}, By Zenkos Club`,
       mediaType: 1,
-      sourceUrl: "https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O",
+      sourceUrl: "https://whatsapp.com/channel/0029VbAZUQ3002T9KZfx2O1M",
       thumbnail: fs.readFileSync(imgBot),
       renderLargerThumbnail: true
     }
