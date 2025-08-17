@@ -1,10 +1,8 @@
 let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
 
   if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
-    text: '*[❗] Solo los administradores pueden usar este comando.*',
-    contextInfo: {
-      ...rcanal.contextInfo
-    }
+    text: '《✩》Solo los administradores pueden usar este comando.',
+    contextInfo: m.contextInfo || {} 
   }, { quoted: m })
   
   const groupMetadata = await conn.groupMetadata(m.chat)
@@ -17,10 +15,7 @@ let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
 
 }
 
-handler.help = ['#tag']
-handler.tags = ['grupos']
-handler.command = ['tag', 'todos', 'mencionartodos']
-handler.group = true
-handler.admin = true
-
+handler.command = ['tag', 'say', 'tagall']
+handler.help = ['tag']
+handler.tags = ['admin']
 export default handler
