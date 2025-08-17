@@ -34,7 +34,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   }, { quoted: m })
 }
 
-handler.command = ['kick', 'ban']
+handler.command = ['kick', 'eject']
 handler.help = ['kick']
 handler.tags = ['admin']
 export default handler
