@@ -2,7 +2,9 @@ let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
 
   if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
     text: '《✩》Solo los administradores pueden usar este comando.',
-    contextInfo: m.contextInfo || {} 
+    contextInfo: {
+      ...rcanal.contextInfo
+    }
   }, { quoted: m })
   
   const groupMetadata = await conn.groupMetadata(m.chat)
