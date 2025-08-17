@@ -1,40 +1,34 @@
-import { isJidGroup } from '@whiskeysockets/baileys'
+import fs from 'fs'
+import path from 'path'
 
-let handler = async (m, { conn, args, isAdmin, isOwner, isPrems, usedPrefix, command }) => {
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
-    text: '《✧》Solo los administradores pueden usar este comando.',
-    contextInfo: { ...rcanal.contextInfo }
-  }, { quoted: m })
-
-  let who
-  if (m.mentionedJid && m.mentionedJid.length > 0) {
-    who = m.mentionedJid[0]
-  } else if (m.quoted && m.quoted.sender) {
-    who = m.quoted.sender
-  } else {
-    return conn.sendMessage(m.chat, {
-      text: `《✧》Debes mencionar o responder al bot que deseas establecer como primario.\n\n> Ejemplo: ${usedPrefix + command} @usuario`,
-      contextInfo: { ...rcanal.contextInfo }
-    }, { quoted: m })
+let handler = async (m, { text, isAdmin, isOwner, isPrems }) => {
+  if (!isAdmin && !isOwner && !isPrems) {
+    return m.reply('《✧》Solo los administradores pueden usar este comando.')
   }
 
-  if (!global.db.data.chats[m.chat]) {
-    global.db.data.chats[m.chat] = {}
+  if (!text || !text.replace(/[^0-9]/g, '')) {
+    return m.reply('Debes etiquetar o escribir el número del bot que quieres hacer principal en este grupo.')
   }
 
-  global.db.data.chats[m.chat].primaryBot = who
+  let number = text.replace(/[^0-9]/g, '')
+  let botJid = number + '@s.whatsapp.net'
+  let subbotPath = path.join('./serbots', number, 'creds.json')
 
-  const botName = await conn.getName(who)
-  const adminName = await conn.getName(m.sender)
-  const groupName = (await conn.groupMetadata(m.chat)).subject
+  if (!fs.existsSync(subbotPath)) {
+    return m.reply(`El número *${number}* no corresponde a un Subbot válido (no se encontró su *creds.json* en JadiBots).`)
+  }
 
-  return conn.sendMessage(m.chat, {
-    text: `✿ Bot establecido como primario en el grupo.\n\n✰ Bot: @${who.split('@')[0]}\n❏ Admin: @${m.sender.split('@')[0]}\n\n✐ Grupo: ${groupName}`,
-    contextInfo: { ...rcanal.contextInfo, mentionedJid: [who, m.sender] }
-  }, { quoted: m })
+  if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = {}
+  global.db.data.chats[m.chat].primaryBot = botJid
+
+  return m.reply(
+    `✿ Bot establecido como primario en este grupo.\n\n✰ Bot: *@${number}*\n❏ Admin: @${m.sender.split('@')[0]}`, 
+    { mentions: [botJid, m.sender] }
+  )
 }
 
+handler.help = ['setprimary @bot | número']
+handler.tags = ['serbot']
 handler.command = ['setprimary']
-handler.help = ['setprimary']
-handler.tags = ['group']
+
 export default handler
