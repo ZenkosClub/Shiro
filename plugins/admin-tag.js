@@ -1,19 +1,23 @@
-import { isJidGroup } from '@whiskeysockets/baileys'
-
 let handler = async (m, { conn, args, isAdmin, isOwner, isPrems }) => {
-  if (!isJidGroup(m.chat)) return
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
-    contextInfo: m.contextInfo || {} 
+
+  if (!m.isGroup) return
+  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
+    text: '《✩》Solo los administradores pueden usar este comando.',
+    contextInfo: { ...m.contextInfo }
   }, { quoted: m })
 
-  let text = args?.join(' ')
-  if (!text) text = '《✩》Debes enviar un mensaje para usar el comando.'
+  try {
+    const groupMetadata = await conn.groupMetadata(m.chat)
+    const participants = groupMetadata.participants.map(p => p.id)
 
-  return conn.sendMessage(m.chat, { 
-    text,
-    contextInfo: m.contextInfo || {} 
-  }, { quoted: m })
+    await conn.sendMessage(m.chat, {
+      text: args?.join(' ') || ' ',
+      contextInfo: { mentionedJid: participants }
+    }, { quoted: m })
+
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 handler.command = ['tag', 'say', 'tagall']
