@@ -44,7 +44,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗰᗩＩＮ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *main* para funciones principales y importantes.
+> ✐ Comandos *para* funciones principales y importantes.
 ➨ #menu #help #all
 > ❈ Muestra todos los comandos y categorías del bot.
 ➨ #status #p #ping
@@ -53,7 +53,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ՏＯᑕＫᗴＴ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *socket* para gestionar conexión y datos.
+> ✐ Comandos *para* gestionar conexión y datos del bot.
 ➨ #code #qr
 > ❈ Conecta un subbot por código o escaneando QR.
 ➨ #setbotname #setname
@@ -62,18 +62,24 @@ let handler = async (m, { conn, usedPrefix }) => {
 > ❈ Ver el número de bots activos.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
-   _ＡＤＭＩＮ_
+   _ᗷＯＳＳ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *admin* para administradores del grupo.
+> ✐ Comandos *para* administradores del grupo.
 ➨ #kick #eject
-> ❈ Eliminar a un miembro del grupo
+> ❈ Elimina a un miembro del grupo.
+➨ #tag #say #tagall
+> ❈ Menciona a todos los miembros o envía mensajes a todos.
+➨ #promote #authorize #grant 
+> ❈ Concede permisos de administrador a un usuario.
+➨ #demote #degrade #revoke 
+> ❈ Quitar permisos de administrador a un usuario.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗝᗯＮＥＲ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *owner* para funciones exclusivas.
+> ✐ Comandos *para* funciones exclusivas del dueño.
 ➨ #update #fix
-> ❈ Actualizar todo lo del bot.
+> ❈ Actualiza completamente todo lo del bot.
 `.trim()
 
     await conn.sendMessage(m.chat, {
