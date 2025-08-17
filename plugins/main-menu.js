@@ -37,6 +37,8 @@ let handler = async (m, { conn, usedPrefix }) => {
 │🜸 *Baileys* » Multi Devices
 ╰───────────
 
+https://whatsapp.com/channel/0029Vb5Vinf72WTo11c5hJ3O
+
 ╭─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜
 > ✿ Crea un *Sub-Bot* con tu número utilizando *#qr* o *#code*
 ╰ׅ─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜
