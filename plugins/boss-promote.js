@@ -8,7 +8,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   }, { quoted: m })
   
   if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: `《✩》Debes mencionar al usuario que deseas promover a administrador.`, 
+    text: `《✩》Menciona al usuario que deseas dar a administrador.`, 
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
