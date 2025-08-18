@@ -8,7 +8,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isOwner, isPrems, u
   }, { quoted: m })
   
   if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: `《✩》Menciona al usuario que deseas degradar a administrador.`, 
+    text: '《✩》Debes mencionar a un usuario que deseas degradarlo a administrador.', 
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
@@ -23,7 +23,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isOwner, isPrems, u
   await conn.groupParticipantsUpdate(m.chat, [who], 'demote')
 
   return conn.sendMessage(m.chat, { 
-    text: `《✩》El usuario ya no es administrador del grupo.`, 
+    text: '《✩》Fue descartado este usuario como no administrador del grupo.', 
     contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
