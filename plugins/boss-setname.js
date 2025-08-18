@@ -13,7 +13,6 @@ let handler = async (m, { conn, args, participants, isAdmin, usedPrefix, command
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
-  try {
     const metadata = await conn.groupMetadata(m.chat)
     const oldName = metadata?.subject || 'Sin nombre'
 
