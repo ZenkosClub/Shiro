@@ -1,14 +1,19 @@
 import { isJidGroup } from '@whiskeysockets/baileys'
 
-let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner, isPrems, usedPrefix, command }) => {
+let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, usedPrefix, command }) => {
   if (!m.isGroup) return
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
+  if (!isAdmin) return conn.sendMessage(m.chat, { 
+    text: '《✩》Solo los administradores pueden usar este comando.',
+    contextInfo: { ...m.contextInfo } 
+  }, { quoted: m })
+
+  if (!isBotAdmin) return conn.sendMessage(m.chat, { 
+    text: '《✧》Debo ser administrador para ejecutar este Comando.',
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
   
   if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: `《✩》Debes mencionar al usuario que deseas eliminar.`, 
+    text: `《✩》Debes mencionar al usuario que deseas eliminar.`,
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
@@ -29,7 +34,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   const groupName = (await conn.groupMetadata(m.chat)).subject
 
   return conn.sendMessage(m.chat, { 
-    text: `《✩》@${who.split('@')[0]} usuario eliminado exitosamente del grupo.`, 
+    text: `《✩》Usuario eliminado del grupo.`,
     contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
