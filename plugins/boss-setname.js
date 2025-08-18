@@ -1,6 +1,6 @@
 import { isJidGroup } from '@whiskeysockets/baileys'
 
-let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
+let handler = async (m, { conn, args, participants, isAdmin, usedPrefix, command }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: '《✩》Solo los administradores pueden usar este comando.', 
