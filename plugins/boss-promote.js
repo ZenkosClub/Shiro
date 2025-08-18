@@ -8,7 +8,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   }, { quoted: m })
   
   if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: `《✩》Menciona al usuario que deseas dar a administrador.`, 
+    text: `《✩》Debes mencionar a un usuario para promoverlo a administrador.`, 
     contextInfo: { ...m.contextInfo } 
   }, { quoted: m })
 
@@ -28,7 +28,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   const adminName = await conn.getName(m.sender)
 
   return conn.sendMessage(m.chat, { 
-    text: `《✩》Usuario promovido a administrador del grupo.`, 
+    text: `《✩》Fue promovido este usuario a administrador del grupo.`, 
     contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
