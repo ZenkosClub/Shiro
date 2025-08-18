@@ -18,7 +18,7 @@ let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner
   const groupMetadata = await conn.groupMetadata(m.chat)
   const isUserAdmin = groupMetadata.participants.find(p => p.id === who)?.admin
   if (isUserAdmin) return conn.sendMessage(m.chat, { 
-    text: '《✩》@${who.split('@')[0]} ya es administrador del grupo.', 
+    text: `《✩》@${who.split('@')[0]} ya es administrador del grupo.`, 
     contextInfo: { ...m.contextInfo, mentionedJid: [who] } 
   }, { quoted: m })
 
