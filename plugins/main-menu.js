@@ -37,8 +37,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 │🜸 *Baileys* » Multi Devices
 ╰───────────
 
-https://whatsapp.com/channel/0029VbAZUQ3002T9KZfx2O1M
-
 ╭─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜
 > ✿ Crea un *Sub-Bot* con tu número utilizando *#qr* o *#code*
 ╰ׅ─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜─ׄ͜
@@ -46,42 +44,50 @@ https://whatsapp.com/channel/0029VbAZUQ3002T9KZfx2O1M
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗰᗩＩＮ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *para* funciones principales y importantes.
-➨ #menu #help #all
-> ❈ Muestra todos los comandos y categorías del bot.
-➨ #status #p #ping
-> ❈ Verifica el estado y la velocidad del bot.
+> ✐ *_Comandos para funciones principales y importantes._*
+ᰔᩚ *#menu #help #all*
+> ꕥ Muestra todos los comandos y categorías del bot.
+ᰔᩚ *#status #p #ping*
+> ꕥ Verifica el estado y la velocidad del bot.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ՏＯᑕＫᗴＴ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *para* gestionar conexión y datos del bot.
-➨ #code #qr
-> ❈ Conecta un subbot por código o escaneando QR.
-➨ #setbotname #setname
-> ❈ Cambia el nombre del bot.
-➨ #sockets #bots
-> ❈ Ver el número de bots activos.
+> ✐ *_Comandos para gestionar conexión y datos del bot._*
+ᰔᩚ *#code #qr*
+> ꕥ Conecta un subbot por código o escaneando QR.
+ᰔᩚ *#setbotname #setname*
+> ꕥ Cambia el nombre del bot.
+ᰔᩚ *#sockets #bots*
+> ꕥ Ve el número de bots activos.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗷＯＳＳ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *para* administradores del grupo.
-➨ #kick #eject
-> ❈ Elimina a un miembro del grupo.
-➨ #tag #say #tagall
-> ❈ Menciona a todos los miembros o envía mensajes a todos.
-➨ #promote #authorize #grant 
-> ❈ Concede permisos de administrador a un usuario.
-➨ #demote #degrade #revoke 
-> ❈ Quitar permisos de administrador a un usuario.
+> ✐ *_Comandos para administradores del grupo._*
+ᰔᩚ *#kick #eject*
+> ꕥ Elimina a un miembro del grupo.
+ᰔᩚ *#tag #say #tagall*
+> ꕥ Envía un mensaje mencionando a todos los miembros del grupo.
+ᰔᩚ *#promote #authorize #grant*
+> ꕥ Concede permisos de administrador a un usuario.
+ᰔᩚ *#demote #degrade #revoke*
+> ꕥ Quita permisos de administrador a un usuario.
+ᰔᩚ *#groupname #gbname #namegb #setgroupname*
+> ꕥ Cambia el nombre del grupo.
+ᰔᩚ *#groupimage #gbimg #imagegb #setgroupimg*
+> ꕥ Cambia la imagen del grupo.
+ᰔᩚ *#close*
+> ꕥ Cierra el grupo para que solo los administradores puedan enviar mensajes.
+ᰔᩚ *#open*
+> ꕥ Abre el grupo para que todos los usuarios puedan enviar mensajes.
 
 ╭┈❈─ׄ͜─ׄ͜─ׄ͜╴
    _ᗝᗯＮＥＲ_
 ╶͜─ׄ͜─ׄ͜─❈┈╯
-> ✐ Comandos *para* funciones exclusivas del dueño.
-➨ #update #fix
-> ❈ Actualiza completamente todo lo del bot.
+> ✐ *_Comandos para funciones exclusivas del dueño._*
+ᰔᩚ *#update #fix*
+> ꕥ Actualiza completamente todo lo del bot.
 `.trim()
 
     await conn.sendMessage(m.chat, {
