@@ -5,18 +5,23 @@ let handler = async (m, { conn, isAdmin }) => {
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  const who = m.mentionedJid && m.mentionedJid.length > 0 
-    ? m.mentionedJid[0] 
-    : m.quoted?.sender
+  const whoRaw = (m.mentionedJid && m.mentionedJid[0]) 
+    || m.quoted?.sender 
+    || m.quoted?.participant 
+    || m.quoted?.key?.participant 
+    || m.quoted?.contextInfo?.participant 
+    || null
 
-  if (!who) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* o *responder* al usuario que deseas eliminar.', 
+  if (!whoRaw) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes mencionar al usuario que deseas *eliminar*.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  const ownerNumbers = global.owner.map(v => { 
-    const id = typeof v === 'string' ? v.replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '') 
-    return id + '@s.whatsapp.net' 
+  const who = whoRaw.replace(/:[0-9]+/, '')
+
+  const ownerNumbers = (global.owner || []).map(v => {
+    const id = typeof v === 'string' ? v.replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '')
+    return id + '@s.whatsapp.net'
   })
 
   if (ownerNumbers.includes(who)) return conn.sendMessage(m.chat, { 
@@ -29,7 +34,17 @@ let handler = async (m, { conn, isAdmin }) => {
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
+  try {
+    const meta = await conn.groupMetadata(m.chat)
+    const inGroup = Array.isArray(meta?.participants) && meta.participants.some(p => p?.id === who)
+    if (!inGroup) return conn.sendMessage(m.chat, { 
+      text: 'ᰔᩚ Acción inválida.\n> ꕥ El usuario no está en este *grupo*.', 
+      contextInfo: { ...(m.contextInfo || {}) } 
+    }, { quoted: m })
+  } catch {}
+
   await conn.groupParticipantsUpdate(m.chat, [who], 'remove')
+
   if (!global.db.data.users[who]) global.db.data.users[who] = {}
   global.db.data.users[who].banned = true
 
