@@ -5,12 +5,15 @@ let handler = async (m, { conn, isAdmin }) => {
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* al usuario que deseas eliminar.', 
+  const who = m.mentionedJid && m.mentionedJid.length > 0 
+    ? m.mentionedJid[0] 
+    : m.quoted?.sender
+
+  if (!who) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* o *responder* al usuario que deseas eliminar.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  const who = m.mentionedJid[0]
   const ownerNumbers = global.owner.map(v => { 
     const id = typeof v === 'string' ? v.replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '') 
     return id + '@s.whatsapp.net' 
@@ -22,7 +25,7 @@ let handler = async (m, { conn, isAdmin }) => {
   }, { quoted: m })
 
   if (who === conn.user.jid) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ No puedo eliminarme a mí mismo.', 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ No puedo eliminarme a mí *mismo*.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
@@ -31,7 +34,7 @@ let handler = async (m, { conn, isAdmin }) => {
   global.db.data.users[who].banned = true
 
   return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Usuario eliminado del grupo.\n> ꕥ La acción fue ejecutada correctamente.', 
+    text: 'ᰔᩚ Usuario eliminado del *grupo*.\n> ꕥ La acción fue ejecutada correctamente.', 
     contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
