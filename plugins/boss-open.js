@@ -1,7 +1,7 @@
 let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
