@@ -20,7 +20,7 @@ let handler = async (m, { conn, isAdmin }) => {
   const participant = groupMetadata.participants.find(p => p.id === who)
   if (!participant) return
   if (participant.admin) return conn.sendMessage(m.chat, { 
-    text: `ᰔᩚ El usuario ya es *administrador* en este grupo.\nꕥ Usuario @${who.split('@')[0]}`, 
+    text: `ᰔᩚ El usuario ya es *administrador* en este grupo.\n> ꕥ Usuario @${who.split('@')[0]}`, 
     contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who] } 
   }, { quoted: m })
   
