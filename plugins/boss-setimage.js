@@ -1,4 +1,4 @@
-let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
+let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
@@ -7,14 +7,14 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
 
   let q = m.quoted ? m.quoted : m
   let mime = (q.msg || q).mimetype || ''
-  if (!mime || !mime.startsWith('image/')) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen con el comando.\n\nꕥ _Ejemplo:_\n> ᰔᩚ *#groupimage (respondiendo a una foto)*', 
+
+  if (!mime || !(mime.startsWith('image/') || mime === 'image/webp')) {
+    return conn.sendMessage(m.chat, { 
+      text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen o sticker con el comando.\n\nꕥ _Ejemplo:_\n> ᰔᩚ *#groupimage (respondiendo a una foto o sticker)*', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  let img = await downloadContentFromMessage(q.msg || q, 'image')
-  let buffer = Buffer.from([])
-  for await (const chunk of img) buffer = Buffer.concat([buffer, chunk])
+  let buffer = await q.download()
 
   await conn.updateProfilePicture(m.chat, buffer)
 
