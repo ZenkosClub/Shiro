@@ -12,7 +12,7 @@ let handler = async (m, { conn, isAdmin }) => {
 
   if (!mime || !(mime.startsWith('image/') || mime === 'image/webp')) {
     return conn.sendMessage(m.chat, { 
-      text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen o sticker con el comando.\n\nꕥ _Ejemplo:_\n> ᰔᩚ *#groupimage (respondiendo a una foto o sticker)*', 
+      text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen o sticker.', 
       contextInfo: { ...(m.contextInfo || {}) } 
     }, { quoted: m })
   }
@@ -33,5 +33,4 @@ let handler = async (m, { conn, isAdmin }) => {
 handler.command = ['groupimage', 'gbimg', 'imagegb', 'setgroupimg']
 handler.help = ['groupimage']
 handler.tags = ['boss']
-
 export default handler
