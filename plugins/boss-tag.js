@@ -1,17 +1,19 @@
-let handler = async (m, { conn, text, isAdmin, isOwner, isPrems }) => {
-
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, {
-    text: '《✩》Solo los administradores pueden usar este comando.',
-    contextInfo: { ...m.contextInfo } 
+let handler = async (m, { conn, text, isAdmin }) => {
+  if (!m.isGroup) return
+  if (!isAdmin) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
   
   const groupMetadata = await conn.groupMetadata(m.chat)
   const participants = groupMetadata.participants
-  
+
+  let quotedMsg = m.quoted ? m.quoted : m
+
   await conn.sendMessage(m.chat, { 
-    text: text || ' ',
+    text: text || quotedMsg.text || ' ',
     mentions: participants.map(p => p.id)
-  }, { quoted: m })
+  }, { quoted: quotedMsg })
 
 }
 
