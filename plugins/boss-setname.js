@@ -1,4 +1,4 @@
-let handler = async (m, { conn, arg, isAdmin }) => {
+let handler = async (m, { conn, args, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
