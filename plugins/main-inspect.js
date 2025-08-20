@@ -1,49 +1,27 @@
-import { extractGroupInvite } from '@whiskeysockets/baileys'
+let handler = async (m, { conn }) => {
+  if (!m.isGroup) return m.reply('⚠️ Este comando solo funciona en grupos.')
 
-let handler = async (m, { conn, text }) => {
-  if (!text) return m.reply('📌 Envía un enlace de grupo o canal.')
+  let id = m.chat
+  let groupMetadata = await conn.groupMetadata(id)
+  let admins = groupMetadata.participants.filter(p => p.admin)
+  let owner = groupMetadata.owner ? groupMetadata.owner : (admins[0] ? admins[0].id : 'No definido')
+  let subject = groupMetadata.subject
+  let desc = groupMetadata.desc ? groupMetadata.desc : 'Sin descripción'
+  let participants = groupMetadata.participants.length
+  let adminList = admins.map((a, i) => `*${i+1}.* @${a.id.split('@')[0]}`).join('\n')
 
-  let linkRegex = /(https?:\/\/chat\.whatsapp\.com\/[0-9A-Za-z]{20,24})/i
-  let link = text.match(linkRegex) ? text.match(linkRegex)[0] : null
+  let text = `*🔍 Información del grupo*\n\n` +
+             `🏷️ *Nombre:* ${subject}\n` +
+             `👑 *Creador:* @${owner.split('@')[0]}\n` +
+             `👥 *Miembros:* ${participants}\n` +
+             `📌 *Descripción:* ${desc}\n\n` +
+             `🛡️ *Administradores:*\n${adminList || 'No hay administradores'}`
 
-  if (!link) return m.reply('❌ No encontré ningún enlace válido.')
-
-  try {
-    // Extraer el código de invitación
-    let code = link.split('/').pop()
-
-    // Obtener info del grupo/canal
-    let res = await conn.groupGetInviteInfo(code)
-
-    if (!res) return m.reply('⚠️ No pude obtener información de ese enlace.')
-
-    let txt = `╭─❖ 「 *ENLACE INSPECTOR* 」\n`
-    txt += `├ 🔑 ID: ${res.id || '-'}\n`
-    txt += `├ 📌 Nombre: ${res.subject || '-'}\n`
-    txt += `├ 👤 Creado por: ${res.owner || '-'}\n`
-    txt += `├ 📅 Creado: ${res.creation ? new Date(res.creation * 1000).toLocaleString() : '-'}\n`
-    txt += `├ 👥 Participantes: ${res.size || 0}\n`
-    txt += `├ 📖 Descripción:\n${res.desc || '-'}\n`
-    txt += `╰───────────────❖`
-
-    // Enviar foto si existe
-    if (res?.subjectPicture) {
-      await conn.sendMessage(m.chat, {
-        image: { url: res.subjectPicture },
-        caption: txt
-      }, { quoted: m })
-    } else {
-      await m.reply(txt)
-    }
-
-  } catch (e) {
-    console.error(e)
-    m.reply('❌ Error al inspeccionar el enlace.')
-  }
+  await conn.sendMessage(m.chat, { text, mentions: [owner, ...admins.map(a => a.id)] }, { quoted: m })
 }
 
-handler.help = ['inspect <enlace>']
-handler.tags = ['info']
-handler.command = /^inspect$/i
+handler.help = ['inspeccionar']
+handler.tags = ['group']
+handler.command = ['inspeccionar']
 
 export default handler
