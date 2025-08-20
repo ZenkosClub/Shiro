@@ -1,22 +1,20 @@
-import { isJidGroup } from '@whiskeysockets/baileys'
-
-let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
+let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
   const newName = args.join(' ').trim()
   if (!newName) return conn.sendMessage(m.chat, { 
-    text: '《✩》Debes indicar el nuevo nombre del grupo. _Ejemplo:_ *#groupname Grupo Bot*', 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes indicar el *nuevo nombre* del grupo.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
   await conn.groupUpdateSubject(m.chat, newName)
 
   return conn.sendMessage(m.chat, { 
-    text: `《✩》Nombre del grupo actualizado a: *${newName}*`, 
+    text: `ᰔᩚ Nombre del grupo *actualizado* correctamente.\n> ꕥ Nuevo nombre: *${newName}*`, 
     contextInfo: { ...(m.contextInfo || {}), mentionedJid: [m.sender] } 
   }, { quoted: m })
 }
