@@ -15,19 +15,16 @@ let handler = async (m, { conn, isAdmin }) => {
     text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* al usuario que deseas degradar.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
+  
+  const groupMetadata = await conn.groupMetadata(m.chat)
+  const participant = groupMetadata.participants.find(p => p.id === who)
+  if (!participant) return
+  if (!participant.admin) return
 
   if (!participant.admin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Acción inválida.\n> ꕥ Este usuario *no es administrador*.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
-
-  const who = m.mentionedJid[0]
-  if (who === conn.user.jid) return
-
-  const groupMetadata = await conn.groupMetadata(m.chat)
-  const participant = groupMetadata.participants.find(p => p.id === who)
-  if (!participant) return
-  if (!participant.admin) return
 
   await conn.groupParticipantsUpdate(m.chat, [who], 'demote')
 
