@@ -1,15 +1,24 @@
-import { isJidGroup } from '@whiskeysockets/baileys'
-
-let handler = async (m, { conn, args, participants, isAdmin, isOwner, isPrems, usedPrefix, command }) => {
+let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
-    contextInfo: { ...m.contextInfo } 
+  if (!isAdmin) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
-  
-  if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: '《✩》Debes mencionar a un usuario que deseas degradarlo a administrador.', 
-    contextInfo: { ...m.contextInfo } 
+
+  let who = m.mentionedJid && m.mentionedJid[0] 
+    ? m.mentionedJid[0] 
+    : m.quoted 
+      ? m.quoted.sender 
+      : null
+
+  if (!who) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* al usuario que deseas degradar.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
+  }, { quoted: m })
+
+  if (!participant.admin) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Este usuario *no es administrador*.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
   const who = m.mentionedJid[0]
@@ -22,9 +31,10 @@ let handler = async (m, { conn, args, participants, isAdmin, isOwner, isPrems, u
 
   await conn.groupParticipantsUpdate(m.chat, [who], 'demote')
 
+
   return conn.sendMessage(m.chat, { 
-    text: '《✩》Fue descartado este usuario como no administrador del grupo.', 
-    contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
+    text: 'ᰔᩚ Usuario *degradado* del rango de administrador.\n> ꕥ La acción fue ejecutada correctamente.', 
+    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
 
