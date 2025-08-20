@@ -1,34 +1,40 @@
-import { generateWAMessageFromContent, proto } from '@whiskeysockets/baileys'
-
-let handler = async (m, { conn, args, isAdmin }) => {
-  if (!m.isGroup) return conn.reply(m.chat, '🚩 Este comando solo funciona en *grupos o canales*.', m)
-
+let handler = async (m, { conn, args }) => {
   try {
-    const metadata = await conn.groupMetadata(m.chat)
-    const owner = metadata.owner ? '@' + metadata.owner.split('@')[0] : 'No definido'
-    const creation = new Date(metadata.creation * 1000).toLocaleString()
-    const link = 'https://chat.whatsapp.com/' + (await conn.groupInviteCode(m.chat))
+    // Si se pasa un ID de grupo/canal en args
+    let id = args[0] ? args[0] : m.chat
 
-    let info = `*🔎 INSPECCIÓN COMPLETA*
-    
-🏷️ *Nombre:* ${metadata.subject}
-🆔 *ID:* ${metadata.id}
-👤 *Creador/Owner:* ${owner}
-📅 *Creado el:* ${creation}
-👥 *Participantes:* ${metadata.participants.length}
-🔗 *Enlace:* ${link}
-📖 *Descripción:* ${metadata.desc || 'Sin descripción'}
-`
+    // Para grupos
+    if (id.endsWith('@g.us')) {
+      let info = await conn.groupMetadata(id)
+      let txt = `
+🆔 ID: ${info.id}
+📛 Nombre: ${info.subject}
+👤 Creado por: ${info.owner || 'Desconocido'}
+📅 Creado el: ${new Date(info.creation * 1000).toLocaleString()}
+👥 Participantes: ${info.participants.length}
+📝 Descripción: ${info.desc ? info.desc : 'Sin descripción'}
+      `
+      await conn.sendMessage(m.chat, { text: txt }, { quoted: m })
+    }
 
-    await conn.sendMessage(m.chat, { text: info, mentions: conn.parseMention(info) }, { quoted: m })
+    // Para canales
+    else if (id.endsWith('@broadcast')) {
+      let info = await conn.groupMetadata(id).catch(() => null)
+      let txt = `
+🆔 ID: ${id}
+📛 Nombre: ${info?.subject || 'Canal sin nombre'}
+📝 Descripción: ${info?.desc || 'Sin descripción'}
+      `
+      await conn.sendMessage(m.chat, { text: txt }, { quoted: m })
+    } else {
+      m.reply('🚩 Debes dar un enlace válido de grupo o canal.')
+    }
 
   } catch (e) {
-    console.log(e)
-    conn.reply(m.chat, '❌ Error al inspeccionar el grupo/canal.', m)
+    console.error(e)
+    m.reply('❌ Error al obtener información.')
   }
 }
 
-handler.command = /^(inspect|inspeccionar|info)$/i
-handler.group = true
-
+handler.command = /^inspect$/i
 export default handler
