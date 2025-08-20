@@ -1,40 +1,49 @@
-let handler = async (m, { conn, args }) => {
+import { extractGroupInvite } from '@whiskeysockets/baileys'
+
+let handler = async (m, { conn, text }) => {
+  if (!text) return m.reply('📌 Envía un enlace de grupo o canal.')
+
+  let linkRegex = /(https?:\/\/chat\.whatsapp\.com\/[0-9A-Za-z]{20,24})/i
+  let link = text.match(linkRegex) ? text.match(linkRegex)[0] : null
+
+  if (!link) return m.reply('❌ No encontré ningún enlace válido.')
+
   try {
-    // Si se pasa un ID de grupo/canal en args
-    let id = args[0] ? args[0] : m.chat
+    // Extraer el código de invitación
+    let code = link.split('/').pop()
 
-    // Para grupos
-    if (id.endsWith('@g.us')) {
-      let info = await conn.groupMetadata(id)
-      let txt = `
-🆔 ID: ${info.id}
-📛 Nombre: ${info.subject}
-👤 Creado por: ${info.owner || 'Desconocido'}
-📅 Creado el: ${new Date(info.creation * 1000).toLocaleString()}
-👥 Participantes: ${info.participants.length}
-📝 Descripción: ${info.desc ? info.desc : 'Sin descripción'}
-      `
-      await conn.sendMessage(m.chat, { text: txt }, { quoted: m })
-    }
+    // Obtener info del grupo/canal
+    let res = await conn.groupGetInviteInfo(code)
 
-    // Para canales
-    else if (id.endsWith('@broadcast')) {
-      let info = await conn.groupMetadata(id).catch(() => null)
-      let txt = `
-🆔 ID: ${id}
-📛 Nombre: ${info?.subject || 'Canal sin nombre'}
-📝 Descripción: ${info?.desc || 'Sin descripción'}
-      `
-      await conn.sendMessage(m.chat, { text: txt }, { quoted: m })
+    if (!res) return m.reply('⚠️ No pude obtener información de ese enlace.')
+
+    let txt = `╭─❖ 「 *ENLACE INSPECTOR* 」\n`
+    txt += `├ 🔑 ID: ${res.id || '-'}\n`
+    txt += `├ 📌 Nombre: ${res.subject || '-'}\n`
+    txt += `├ 👤 Creado por: ${res.owner || '-'}\n`
+    txt += `├ 📅 Creado: ${res.creation ? new Date(res.creation * 1000).toLocaleString() : '-'}\n`
+    txt += `├ 👥 Participantes: ${res.size || 0}\n`
+    txt += `├ 📖 Descripción:\n${res.desc || '-'}\n`
+    txt += `╰───────────────❖`
+
+    // Enviar foto si existe
+    if (res?.subjectPicture) {
+      await conn.sendMessage(m.chat, {
+        image: { url: res.subjectPicture },
+        caption: txt
+      }, { quoted: m })
     } else {
-      m.reply('🚩 Debes dar un enlace válido de grupo o canal.')
+      await m.reply(txt)
     }
 
   } catch (e) {
     console.error(e)
-    m.reply('❌ Error al obtener información.')
+    m.reply('❌ Error al inspeccionar el enlace.')
   }
 }
 
+handler.help = ['inspect <enlace>']
+handler.tags = ['info']
 handler.command = /^inspect$/i
+
 export default handler
