@@ -10,6 +10,8 @@ let handler = async (m, { conn, isAdmin }) => {
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
+  const who = m.mentionedJid[0]
+
   await conn.groupParticipantsUpdate(m.chat, [who], 'remove')
   if (!global.db.data.users[who]) global.db.data.users[who] = {}
   global.db.data.users[who].banned = true
