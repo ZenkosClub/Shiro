@@ -21,11 +21,6 @@ let handler = async (m, { conn, isAdmin }) => {
   if (!participant) return
   if (!participant.admin) return
 
-  if (!participant.admin) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Este usuario *no es administrador*.', 
-    contextInfo: { ...(m.contextInfo || {}) } 
-  }, { quoted: m })
-
   await conn.groupParticipantsUpdate(m.chat, [who], 'demote')
 
 
