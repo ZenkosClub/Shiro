@@ -1,27 +1,59 @@
-let handler = async (m, { conn }) => {
-  if (!m.isGroup) return m.reply('⚠️ Este comando solo funciona en grupos.')
+import { extractGroupInvite, getHttpStream } from '@whiskeysockets/baileys'
 
-  let id = m.chat
-  let groupMetadata = await conn.groupMetadata(id)
-  let admins = groupMetadata.participants.filter(p => p.admin)
-  let owner = groupMetadata.owner ? groupMetadata.owner : (admins[0] ? admins[0].id : 'No definido')
-  let subject = groupMetadata.subject
-  let desc = groupMetadata.desc ? groupMetadata.desc : 'Sin descripción'
-  let participants = groupMetadata.participants.length
-  let adminList = admins.map((a, i) => `*${i+1}.* @${a.id.split('@')[0]}`).join('\n')
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  if (!args[0]) return conn.sendMessage(m.chat, { 
+    text: `✦ Debes dar un link.\n\nEjemplo: *${usedPrefix + command} https://chat.whatsapp.com/xxxx*` 
+  }, { quoted: m })
 
-  let text = `*🔍 Información del grupo*\n\n` +
-             `🏷️ *Nombre:* ${subject}\n` +
-             `👑 *Creador:* @${owner.split('@')[0]}\n` +
-             `👥 *Miembros:* ${participants}\n` +
-             `📌 *Descripción:* ${desc}\n\n` +
-             `🛡️ *Administradores:*\n${adminList || 'No hay administradores'}`
+  let link = args[0]
+  let code = extractGroupInvite(link)
 
-  await conn.sendMessage(m.chat, { text, mentions: [owner, ...admins.map(a => a.id)] }, { quoted: m })
+  try {
+    // ----------- INSPECCIONAR GRUPOS -----------
+    if (link.includes("chat.whatsapp.com/")) {
+      let res = await conn.groupGetInviteInfo(code)
+      let info = `
+╭─「 🔍 *INSPECCIÓN DE GRUPO* 」
+│ 📛 Nombre: ${res.subject || 'Sin nombre'}
+│ 🆔 ID: ${res.id}
+│ 👤 Creador: ${res.creator || 'Desconocido'}
+│ 👥 Participantes: ${res.size}
+│ 🛡️ Admins: ${res.participants.filter(p => p.admin).length}
+│ 📝 Descripción: ${res.desc || 'Sin descripción'}
+╰───────────────
+`.trim()
+
+      return conn.sendMessage(m.chat, { text: info }, { quoted: m })
+    }
+
+    // ----------- INSPECCIONAR CANALES -----------
+    if (link.includes("whatsapp.com/channel/")) {
+      // Extraemos el ID del canal
+      let channelId = link.split("/channel/")[1]
+
+      let metadata = await conn.newsletterMetadata(channelId)
+      let info = `
+╭─「 📡 *INSPECCIÓN DE CANAL* 」
+│ 📛 Nombre: ${metadata.name || 'Sin nombre'}
+│ 🆔 ID: ${metadata.id}
+│ 👤 Creador: ${metadata.creatorJid || 'Desconocido'}
+│ 👥 Seguidores: ${metadata.subscribers || 0}
+│ 📝 Descripción: ${metadata.description || 'Sin descripción'}
+╰───────────────
+`.trim()
+
+      return conn.sendMessage(m.chat, { text: info }, { quoted: m })
+    }
+
+    return m.reply("❌ El link no es válido para inspección.")
+  } catch (e) {
+    console.log(e)
+    return m.reply("❌ Error al inspeccionar el enlace.")
+  }
 }
 
-handler.help = ['inspeccionar']
-handler.tags = ['group']
-handler.command = ['inspeccionar']
+handler.help = ['inspect <link>']
+handler.tags = ['group', 'info']
+handler.command = /^inspect$/i
 
 export default handler
