@@ -1,28 +1,31 @@
-let handler = async (m, { conn, isAdmin }) => {
+let handler = async (m, { conn, participants, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* al usuario que deseas eliminar.', 
+  let user
+  if (m.mentionedJid[0]) {
+    user = m.mentionedJid[0]
+  } else if (m.quoted) {
+    user = m.quoted.sender
+  }
+
+  if (!user) return conn.sendMessage(m.chat, { 
+    text: '🚩 Debes *mencionar* o *responder* al usuario que deseas expulsar.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  const who = m.mentionedJid[0]
-
-  await conn.groupParticipantsUpdate(m.chat, [who], 'remove')
-  if (!global.db.data.users[who]) global.db.data.users[who] = {}
-  global.db.data.users[who].banned = true
+  await conn.groupParticipantsUpdate(m.chat, [user], 'remove')
 
   return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Usuario eliminado del *grupo*.\n> ꕥ La acción fue ejecutada correctamente.', 
-    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
+    text: `ᰔᩚ El usuario fue *expulsado* correctamente.\n> ꕥ Acción ejecutada por un administrador.`, 
+    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [m.sender, user] } 
   }, { quoted: m })
 }
 
-handler.command = ['kick', 'eject']
+handler.command = ['kick', 'expulsar', 'ban']
 handler.help = ['kick']
 handler.tags = ['boss']
 export default handler
