@@ -1,4 +1,4 @@
-let handler = async (m, { conn, text, isAdmin }) => {
+let handler = async (m, { conn, text, isAdmin, usedPrefix, command }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
@@ -7,8 +7,15 @@ let handler = async (m, { conn, text, isAdmin }) => {
   
   const groupMetadata = await conn.groupMetadata(m.chat)
   const participants = groupMetadata.participants
-  
-  let content = text || m.quoted?.text || m.text || ' '
+
+  let content = text?.trim()
+  if (!content) {
+    if (m.quoted?.text) {
+      content = m.quoted.text
+    } else {
+      content = '@todos'
+    }
+  }
 
   await conn.sendMessage(m.chat, { 
     text: content,
