@@ -1,35 +1,31 @@
-import { isJidGroup } from '@whiskeysockets/baileys'
-
-let handler = async (m, { conn, args, participants, isAdmin, isBotAdmin, isOwner, isPrems, usedPrefix, command }) => {
+let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
-  if (!isAdmin && !isOwner && !isPrems) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
-    contextInfo: { ...m.contextInfo } 
-  }, { quoted: m })
-  
-  if (!m.mentionedJid || m.mentionedJid.length === 0) return conn.sendMessage(m.chat, { 
-    text: '《✩》Debes mencionar a un usuario para promoverlo a administrador.', 
-    contextInfo: { ...m.contextInfo } 
+  if (!isAdmin) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
-  const who = m.mentionedJid[0]
-  if (who === conn.user.jid) return
+  let who = m.mentionedJid && m.mentionedJid[0] 
+    ? m.mentionedJid[0] 
+    : m.quoted 
+      ? m.quoted.sender 
+      : null
+
+  if (!who) return conn.sendMessage(m.chat, { 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *mencionar* al usuario que deseas promover.', 
+    contextInfo: { ...(m.contextInfo || {}) } 
+  }, { quoted: m })
 
   const groupMetadata = await conn.groupMetadata(m.chat)
-  const isUserAdmin = groupMetadata.participants.find(p => p.id === who)?.admin
-  if (isUserAdmin) return conn.sendMessage(m.chat, { 
-    text: `《✩》@${who.split('@')[0]} ya es administrador del grupo.`, 
-    contextInfo: { ...m.contextInfo, mentionedJid: [who] } 
-  }, { quoted: m })
-
+  const participant = groupMetadata.participants.find(p => p.id === who)
+  if (!participant) return
+  if (!participant.admin) return
+  
   await conn.groupParticipantsUpdate(m.chat, [who], 'promote')
 
-  const groupName = groupMetadata.subject
-  const adminName = await conn.getName(m.sender)
-
   return conn.sendMessage(m.chat, { 
-    text: '《✩》Fue promovido este usuario a administrador del grupo.', 
-    contextInfo: { ...m.contextInfo, mentionedJid: [who, m.sender] } 
+    text: 'ᰔᩚ Usuario *ascendido* al rango de administrador.\n> ꕥ La acción fue ejecutada correctamente.', 
+    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
 
