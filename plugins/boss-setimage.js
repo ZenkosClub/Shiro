@@ -1,3 +1,5 @@
+import { downloadContentFromMessage } from '@whiskeysockets/baileys'
+
 let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
@@ -11,10 +13,14 @@ let handler = async (m, { conn, isAdmin }) => {
   if (!mime || !(mime.startsWith('image/') || mime === 'image/webp')) {
     return conn.sendMessage(m.chat, { 
       text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen o sticker con el comando.\n\nꕥ _Ejemplo:_\n> ᰔᩚ *#groupimage (respondiendo a una foto o sticker)*', 
-    contextInfo: { ...(m.contextInfo || {}) } 
-  }, { quoted: m })
+      contextInfo: { ...(m.contextInfo || {}) } 
+    }, { quoted: m })
+  }
 
-  let buffer = await q.download()
+  let type = mime.split('/')[0]
+  let media = await downloadContentFromMessage(q, type)
+  let buffer = Buffer.from([])
+  for await (const chunk of media) buffer = Buffer.concat([buffer, chunk])
 
   await conn.updateProfilePicture(m.chat, buffer)
 
@@ -27,4 +33,5 @@ let handler = async (m, { conn, isAdmin }) => {
 handler.command = ['groupimage', 'gbimg', 'imagegb', 'setgroupimg']
 handler.help = ['groupimage']
 handler.tags = ['boss']
+
 export default handler
