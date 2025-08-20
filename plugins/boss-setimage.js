@@ -1,16 +1,14 @@
-import { downloadContentFromMessage } from '@whiskeysockets/baileys'
-
-let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
+let handler = async (m, { conn, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
-    text: '《✩》Solo los administradores pueden usar este comando.', 
+    text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
   let q = m.quoted ? m.quoted : m
   let mime = (q.msg || q).mimetype || ''
   if (!mime || !mime.startsWith('image/')) return conn.sendMessage(m.chat, { 
-    text: `《✩》Debes enviar o responder a una imagen con el comando. _Ejemplo:_ *#groupimage (respondiendo a una foto)*`, 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen con el comando.\n\nꕥ Ejemplo:\n> ᰔᩚ *#groupimage (respondiendo a una foto)*', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
@@ -21,7 +19,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
   await conn.updateProfilePicture(m.chat, buffer)
 
   return conn.sendMessage(m.chat, { 
-    text: '《✩》Imagen del grupo actualizada correctamente.', 
+    text: 'ᰔᩚ Imagen de grupo *actualizada* correctamente.\n> ꕥ La acción fue ejecutada por un administrador.', 
     contextInfo: { ...(m.contextInfo || {}), mentionedJid: [m.sender] } 
   }, { quoted: m })
 }
