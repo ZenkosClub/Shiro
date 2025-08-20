@@ -7,14 +7,13 @@ let handler = async (m, { conn, text, isAdmin }) => {
   
   const groupMetadata = await conn.groupMetadata(m.chat)
   const participants = groupMetadata.participants
-
-  let quotedMsg = m.quoted ? m.quoted : m
+  
+  let content = text || m.quoted?.text || m.text || ' '
 
   await conn.sendMessage(m.chat, { 
-    text: text || quotedMsg.text || ' ',
+    text: content,
     mentions: participants.map(p => p.id)
-  }, { quoted: quotedMsg })
-
+  }, { quoted: m })
 }
 
 handler.command = ['tag', 'say', 'tagall']
