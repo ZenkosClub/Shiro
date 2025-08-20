@@ -1,4 +1,4 @@
-let handler = async (m, { conn, isAdmin }) => {
+let handler = async (m, { conn, args, usedPrefix, command, isAdmin }) => {
   if (!m.isGroup) return
   if (!isAdmin) return conn.sendMessage(m.chat, { 
     text: 'ᰔᩚ Este comando está *restringido*.\n> ꕥ Solo los administradores pueden usarlo.', 
@@ -8,7 +8,7 @@ let handler = async (m, { conn, isAdmin }) => {
   let q = m.quoted ? m.quoted : m
   let mime = (q.msg || q).mimetype || ''
   if (!mime || !mime.startsWith('image/')) return conn.sendMessage(m.chat, { 
-    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen con el comando.\n\nꕥ Ejemplo:\n> ᰔᩚ *#groupimage (respondiendo a una foto)*', 
+    text: 'ᰔᩚ Acción inválida.\n> ꕥ Debes *responder* a una imagen con el comando.\n\nꕥ _Ejemplo:_\n> ᰔᩚ *#groupimage (respondiendo a una foto)*', 
     contextInfo: { ...(m.contextInfo || {}) } 
   }, { quoted: m })
 
