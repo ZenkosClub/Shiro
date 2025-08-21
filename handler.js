@@ -21,13 +21,6 @@ let m = chatUpdate.messages[chatUpdate.messages.length - 1]
 if (!m) return
 if (global.db.data == null) await global.loadDatabase()
 
-try {
-m = smsg(this, m) || m
-if (!m) return
-if (m.messageStubType) return
-m.exp = 0
-m.limit = false
-
 try {  
   let user = global.db.data.users[m.sender] ||= {}  
   if (!isNumber(user.exp)) user.exp = 0  
@@ -54,9 +47,19 @@ try {
   if (!('self' in settings)) settings.self = false  
   if (!('autoread' in settings)) settings.autoread = true 
   if (!('autoread' in opts)) opts.autoread = true 
+
+  if (m.isGroup) {
+    if (!chat.msgCount) chat.msgCount = {}
+    if (!chat.msgCount[m.sender]) chat.msgCount[m.sender] = []
+
+    chat.msgCount[m.sender].push({
+      timestamp: Date.now()
+    })
+  }
+
 } catch (e) {  
   console.error(e)  
-}  
+}
 
 if (opts['nyimak']) return  
 if (!m.fromMe && opts['self']) return  
