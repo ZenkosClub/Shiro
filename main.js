@@ -409,52 +409,29 @@ Object.freeze(global.reload)
 watch(pluginFolder, global.reload)
 await global.reloadHandler()
 
+global.conns = global.conns || []
 
 global.reconnectSubBots = async function () {
-  if (!global.conns || !Array.isArray(global.conns)) {
-    global.conns = []
-  }
-
   const serbotDir = './serbots'
-  if (!existsSync(serbotDir)) {
-    console.log(chalk.yellow('No se encontró la carpeta "serbots"'))
-    return
-  }
+  if (!existsSync(serbotDir)) return console.log(chalk.yellow('No se encontró la carpeta "serbots"'))
 
   const subBotFolders = readdirSync(serbotDir).filter(folder => {
     const folderPath = join(serbotDir, folder)
     return statSync(folderPath).isDirectory() && existsSync(join(folderPath, 'creds.json'))
   })
 
-  if (subBotFolders.length === 0) {
-    console.log(chalk.yellow('No se encontraron sub-bots para reconectar'))
-    return
-  }
-
-  console.log(chalk.cyan(`Intentando reconectar ${subBotFolders.length} sub-bots activos...`))
+  if (!subBotFolders.length) return console.log(chalk.yellow('No se encontraron sub-bots para reconectar'))
 
   for (const folder of subBotFolders) {
-    try {
-      const botPath = join(serbotDir, folder)
-      const credsPath = join(botPath, 'creds.json')
+    if (global.conns.some(conn => conn.id === folder)) continue
+    const botPath = join(serbotDir, folder)
 
-      if (!existsSync(credsPath)) {
-        console.log(chalk.red(`No se encontró creds.json en ${folder}, se omite.`))
-        continue
-      }
+    const initSubBot = async (attempt = 0) => {
+      try {
+        const { AYBot } = await import(`./plugins/socket-serbot.js?cache=${Date.now()}`)
+        if (!AYBot) throw new Error('AYBot no disponible')
 
-      const isAlreadyConnected = global.conns.some(conn =>
-        conn.user && conn.user.id && conn.user.id.includes(folder)
-      )
-
-      if (isAlreadyConnected) {
-        console.log(chalk.green(`Sub-bot "${folder}" ya está conectado y activo.`))
-        continue
-      }
-
-      const serbotModule = await import('./plugins/socket-serbot.js')
-      if (serbotModule?.AYBot) {
-        const subConn = await serbotModule.AYBot({
+        const subConn = await AYBot({
           pathAYBot: botPath,
           m: null,
           conn: null,
@@ -464,51 +441,77 @@ global.reconnectSubBots = async function () {
           fromCommand: false
         })
 
-        if (subConn) {
-          global.conns.push(subConn)
-          console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
-        } else {
-          console.log(chalk.red(`No se pudo inicializar el sub-bot "${folder}"`))
-        }
-      } else {
-        console.log(chalk.red(`No se pudo importar AYBot para el sub-bot "${folder}"`))
+        if (!subConn) throw new Error('Falló inicialización')
+
+        subConn.id = folder
+        subConn.isActive = true
+        global.conns.push(subConn)
+
+        subConn.ev.on('connection.update', update => {
+          if (['close', 'lost', 'timeout', 'replaced'].includes(update.connection)) {
+            subConn.isActive = false
+            console.log(chalk.red(`Sub-bot "${folder}" desconectado → reconectando...`))
+            setTimeout(() => initSubBot(), 3000)
+          } else if (update.connection === 'open') {
+            subConn.isActive = true
+            console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
+          }
+        })
+
+        subConn.ev.on('creds.update', () => {
+          subConn.isActive = true
+        })
+
+        console.log(chalk.green(`Sub-bot "${folder}" inicializado correctamente`))
+
+      } catch (err) {
+        console.log(chalk.red(`Sub-bot "${folder}" error attempt ${attempt + 1}: ${err.message}`))
+        setTimeout(() => initSubBot(attempt + 1), Math.min(1000 * (attempt + 1), 60000))
       }
-
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-    } catch (error) {
-      console.log(chalk.red(`Error al reconectar el sub-bot "${folder}":`, error.message))
     }
-  }
 
-  console.log(chalk.cyan(`Proceso de reconexión de sub-bots completado`))
+    initSubBot()
+    await new Promise(r => setTimeout(r, 500))
+  }
 }
 
-const originalConnectionUpdate = connectionUpdate
-connectionUpdate = async function (update) {
-  await originalConnectionUpdate.call(this, update)
+global.monitorSubBots = () => {
+  setInterval(() => {
+    global.conns.forEach(conn => {
+      if (!conn.isActive) {
+        console.log(chalk.yellow(`Sub-bot "${conn.id}" inactivo, forzando reconexión...`))
+        conn.ev.emit('connection.update', { connection: 'lost' })
+      }
+    })
+  }, 10000)
+}
 
-  if (update.connection === 'open' && !this.subBotsReconnected) {
-    this.subBotsReconnected = true
-    console.log(chalk.cyan('Bot principal conectado, iniciando reconexión automática de sub-bots...'))
-
+const wrapConnectionUpdate = original => async function (update) {
+  await original.call(this, update)
+  if (update.connection === 'open' && !this.subBotsDaemonStarted) {
+    this.subBotsDaemonStarted = true
     setTimeout(async () => {
       try {
         await global.reloadHandler()
         await global.reconnectSubBots()
+        global.monitorSubBots()
       } catch (e) {
-        console.error(chalk.red('Error al intentar reconectar sub-bots:'), e)
+        console.error(chalk.red('Error daemon sub-bots:'), e)
       }
-    }, 5000)
+    }, 3000)
   }
 }
 
-setInterval(() => {
-  console.log(chalk.cyan('Verificación periódica → Manteniendo sub-bots activos...'))
-  global.reconnectSubBots().catch(console.error)
-}, 30_000)
+if (typeof connectionUpdate === 'function') connectionUpdate = wrapConnectionUpdate(connectionUpdate)
 
 setTimeout(() => {
-  console.log(chalk.cyan('Iniciando reconexión automática inicial de sub-bots...'))
   global.reconnectSubBots().catch(console.error)
-}, 10_000)
+  global.monitorSubBots()
+}, 5000)
+
+process.on('uncaughtException', e => {
+  console.error(chalk.red('Excepción no atrapada:'), e)
+})
+process.on('unhandledRejection', e => {
+  console.error(chalk.red('Rechazo de promesa no manejado:'), e)
+})
