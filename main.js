@@ -417,7 +417,7 @@ global.reconnectSubBots = async function () {
 
   const serbotDir = './serbots'
   if (!existsSync(serbotDir)) {
-    console.log(chalk.yellow('No se encontró la carpeta "serbots"'))
+    console.log(chalk.green('No se encontró la carpeta "serbots"'))
     return
   }
 
@@ -490,7 +490,7 @@ connectionUpdate = async function (update) {
 
   if (update.connection === 'open' && !this.subBotsReconnected) {
     this.subBotsReconnected = true
-    console.log(chalk.cyan('Bot principal conectado, iniciando reconexión automática de sub-bots...'))
+    console.log(chalk.green('Bot principal conectado. Iniciando reconexión automática de sub-bots.'))
 
     setTimeout(async () => {
       try {
@@ -504,11 +504,11 @@ connectionUpdate = async function (update) {
 }
 
 setInterval(() => {
-  console.log(chalk.cyan('Verificación periódica manteniendo sub-bots activos...'))
+  console.log(chalk.blue('Verificación periódica manteniendo sub-bots activos.'))
   global.reconnectSubBots().catch(console.error)
 }, 30_000)
 
 setTimeout(() => {
-  console.log(chalk.cyan('Iniciando reconexión automática inicial de sub-bots...'))
+  console.log(chalk.blue('Iniciando reconexión automática inicial de sub-bots.'))
   global.reconnectSubBots().catch(console.error)
 }, 10_000)
