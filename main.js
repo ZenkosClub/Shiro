@@ -409,11 +409,8 @@ Object.freeze(global.reload)
 watch(pluginFolder, global.reload)
 await global.reloadHandler()
 
-
 global.reconnectSubBots = async function () {
-  if (!global.conns || !Array.isArray(global.conns)) {
-    global.conns = []
-  }
+  if (!global.conns || !Array.isArray(global.conns)) global.conns = []
 
   const serbotDir = './serbots'
   if (!existsSync(serbotDir)) {
@@ -423,7 +420,16 @@ global.reconnectSubBots = async function () {
 
   const subBotFolders = readdirSync(serbotDir).filter(folder => {
     const folderPath = join(serbotDir, folder)
-    return statSync(folderPath).isDirectory() && existsSync(join(folderPath, 'creds.json'))
+    return statSync(folderPath).isDirectory()
+  })
+
+  global.conns = global.conns.filter(conn => {
+    const folderPath = join(serbotDir, conn.user?.id?.split(':')[0] || '')
+    if (!existsSync(folderPath)) {
+      console.log(chalk.red(`La sesión del sub-bot "${conn.user?.id}" fue eliminada. Eliminando referencia en memoria.`))
+      return false
+    }
+    return true
   })
 
   if (subBotFolders.length === 0) {
@@ -431,24 +437,23 @@ global.reconnectSubBots = async function () {
     return
   }
 
-  console.log(chalk.cyan(`Intentando reconectar ${subBotFolders.length} sub-bots activos...`))
+  console.log(chalk.cyan(`Intentando reconectar ${subBotFolders.length} sub-bots activos.`))
 
   for (const folder of subBotFolders) {
     try {
-      const botPath = join(serbotDir, folder)
-      const credsPath = join(botPath, 'creds.json')
-
-      if (!existsSync(credsPath)) {
-        console.log(chalk.red(`No se encontró creds.json en ${folder}, se omite.`))
-        continue
-      }
-
       const isAlreadyConnected = global.conns.some(conn =>
         conn.user && conn.user.id && conn.user.id.includes(folder)
       )
 
       if (isAlreadyConnected) {
-        console.log(chalk.green(`Sub-bot "${folder}" ya está conectado y activo.`))
+        console.log(chalk.green(`Sub-bot "${folder}" ya está conectado.`))
+        continue
+      }
+
+      const botPath = join(serbotDir, folder)
+      const credsPath = join(botPath, 'creds.json')
+      if (!existsSync(credsPath)) {
+        console.log(chalk.red(`No se encontró creds.json en ${folder}, se omite.`))
         continue
       }
 
@@ -463,7 +468,6 @@ global.reconnectSubBots = async function () {
           command: 'qr',
           fromCommand: false
         })
-
         if (subConn) {
           global.conns.push(subConn)
           console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
@@ -474,14 +478,13 @@ global.reconnectSubBots = async function () {
         console.log(chalk.red(`No se pudo importar AYBot para el sub-bot "${folder}"`))
       }
 
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-    } catch (error) {
-      console.log(chalk.red(`Error al reconectar el sub-bot "${folder}":`, error.message))
+      await new Promise(r => setTimeout(r, 2000))
+    } catch (e) {
+      console.log(chalk.red(`Error al reconectar el sub-bot "${folder}":`, e.message))
     }
   }
 
-  console.log(chalk.cyan(`Proceso de reconexión de sub-bots completado`))
+  console.log(chalk.cyan('Proceso de reconexión de sub-bots completado'))
 }
 
 const originalConnectionUpdate = connectionUpdate
@@ -490,7 +493,7 @@ connectionUpdate = async function (update) {
 
   if (update.connection === 'open' && !this.subBotsReconnected) {
     this.subBotsReconnected = true
-    console.log(chalk.cyan('Bot principal conectado, iniciando reconexión automática de sub-bots...'))
+    console.log(chalk.cyan('Bot principal conectado, iniciando reconexión automática de sub-bots.'))
 
     setTimeout(async () => {
       try {
@@ -503,9 +506,56 @@ connectionUpdate = async function (update) {
   }
 }
 
-setInterval(() => {
-  console.log(chalk.cyan('Verificación periódica → Manteniendo sub-bots activos...'))
-  global.reconnectSubBots().catch(console.error)
+setInterval(async () => {
+  try {
+    const serbotDir = './serbots'
+    if (!existsSync(serbotDir)) return
+
+    const subBotFolders = readdirSync(serbotDir).filter(folder => {
+      const folderPath = join(serbotDir, folder)
+      return statSync(folderPath).isDirectory()
+    })
+
+    global.conns = global.conns.filter(conn => {
+      const folderPath = join(serbotDir, conn.user?.id?.split(':')[0] || '')
+      if (!existsSync(folderPath)) {
+        console.log(chalk.red(`La sesión del sub-bot "${conn.user?.id}" fue eliminada. Eliminando referencia en memoria.`))
+        return false
+      }
+      return true
+    })
+
+    console.log(chalk.cyan('Verificación periódica → Manteniendo sub-bots activos...'))
+
+    for (const folder of subBotFolders) {
+      const isAlreadyConnected = global.conns.some(conn =>
+        conn.user && conn.user.id && conn.user.id.includes(folder)
+      )
+      if (!isAlreadyConnected) {
+        console.log(chalk.yellow(`Sub-bot "${folder}" no conectado. Intentando reconectar.`))
+        const botPath = join(serbotDir, folder)
+        const serbotModule = await import('./plugins/socket-serbot.js')
+        if (serbotModule?.AYBot) {
+          const subConn = await serbotModule.AYBot({
+            pathAYBot: botPath,
+            m: null,
+            conn: null,
+            args: [],
+            usedPrefix: '.',
+            command: 'qr',
+            fromCommand: false
+          })
+          if (subConn) {
+            global.conns.push(subConn)
+            console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
+          }
+        }
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    }
+  } catch (e) {
+    console.error(chalk.red('Error en verificación periódica de sub-bots:'), e)
+  }
 }, 30_000)
 
 setTimeout(() => {
