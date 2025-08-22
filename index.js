@@ -1,5 +1,3 @@
-console.log('Inicializando Shiro...')
-
 import { join, dirname } from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
@@ -10,17 +8,18 @@ import cfonts from 'cfonts'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(__dirname)
 
-cfonts.say('Shiro', {
-  font: 'block',
-  align: 'center',
-  gradient: ['cyan', 'blue']
-})
+function printCenteredVertically(text, font, gradient) {
+  const width = process.stdout.columns || 80
+  const height = process.stdout.rows || 24
+  const rendered = cfonts.render(text, { font, gradient, align: 'center', lineHeight: 1, letterSpacing: 1, space: true, maxLength: width })
+  const lines = rendered.string.split('\n')
+  const paddingTop = Math.max(Math.floor((height - lines.length) / 2), 0)
+  console.clear()
+  console.log('\n'.repeat(paddingTop) + rendered.string)
+}
 
-cfonts.say('WhatsApp Multi-Bot Engine', {
-  font: 'simple',
-  align: 'center',
-  gradient: ['blue', 'white']
-})
+printCenteredVertically('Shiro', 'block', ['cyan', 'blue'])
+printCenteredVertically('WhatsApp Multi-Bot Engine', 'simple', ['blue', 'white'])
 
 let isWorking = false
 
@@ -30,18 +29,11 @@ async function launch(scripts) {
 
   for (const script of scripts) {
     const args = [join(__dirname, script), ...process.argv.slice(2)]
-
-    setupMaster({
-      exec: args[0],
-      args: args.slice(1),
-    })
-
+    setupMaster({ exec: args[0], args: args.slice(1) })
     let child = fork()
-
     child.on('exit', (code) => {
       isWorking = false
       launch(scripts)
-
       if (code === 0) return
       watchFile(args[0], () => {
         unwatchFile(args[0])
