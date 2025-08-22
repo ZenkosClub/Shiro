@@ -1,12 +1,16 @@
 let handler = async (m, { conn, participants }) => {  
   let who
+  const sender = m.sender || ''
+
   if (m.mentionedJid && m.mentionedJid.length > 0) {
     who = m.mentionedJid[0]
   } else {
     const groupMembers = participants
-      .filter(p => p.jid !== m.sender)
+      .filter(p => p.jid !== sender)
       .map(p => p.jid)
-    who = groupMembers[Math.floor(Math.random() * groupMembers.length)]
+    who = groupMembers.length > 0 
+      ? groupMembers[Math.floor(Math.random() * groupMembers.length)] 
+      : sender
   }
 
   const videos = [
@@ -20,8 +24,8 @@ let handler = async (m, { conn, participants }) => {
 
   return conn.sendMessage(m.chat, { 
     video: { url: video }, 
-    caption: `😡 ᰔᩚ @${m.sender.split('@')[0]} está *enojado* con @${who.split('@')[0]}`, 
-    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
+    caption: `😡 ᰔᩚ @${sender.split('@')[0]} está *enojado* con @${who.split('@')[0]}`, 
+    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, sender] } 
   }, { quoted: m })
 }
 
