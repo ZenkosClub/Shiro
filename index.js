@@ -3,23 +3,39 @@ import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { setupMaster, fork } from 'cluster'
 import { watchFile, unwatchFile } from 'fs'
-import cfonts from 'cfonts'
+import figlet from 'figlet'
+import gradient from 'gradient-string'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(__dirname)
 
-function printCenteredVertically(text, font, gradient) {
+function printBanner(text, gradientColors = ['cyan','blue']) {
   const width = process.stdout.columns || 80
   const height = process.stdout.rows || 24
-  const rendered = cfonts.render(text, { font, gradient, align: 'center', lineHeight: 1, letterSpacing: 1, space: true, maxLength: width })
-  const lines = rendered.string.split('\n')
+  let font = 'Standard'
+
+  if (width < 50) font = 'Small'
+  else if (width < 100) font = 'Standard'
+  else font = 'Slant'
+
+  const rendered = figlet.textSync(text, { font, width, horizontalLayout: 'default', verticalLayout: 'default' })
+  const lines = rendered.split('\n')
   const paddingTop = Math.max(Math.floor((height - lines.length) / 2), 0)
+
   console.clear()
-  console.log('\n'.repeat(paddingTop) + rendered.string)
+  console.log('\n'.repeat(paddingTop) + gradient(gradientColors)(rendered))
 }
 
-printCenteredVertically('Shiro', 'block', ['cyan', 'blue'])
-printCenteredVertically('WhatsApp Multi-Bot Engine', 'simple', ['blue', 'white'])
+function renderBanners() {
+  printBanner('Shiro', ['cyan','blue'])
+  printBanner('WhatsApp Multi-Bot Engine', ['blue','white'])
+}
+
+renderBanners()
+
+process.stdout.on('resize', () => {
+  renderBanners()
+})
 
 let isWorking = false
 
