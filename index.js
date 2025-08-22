@@ -1,41 +1,41 @@
+console.log('Inicializando Shiro...')
+
 import { join, dirname } from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { setupMaster, fork } from 'cluster'
 import { watchFile, unwatchFile } from 'fs'
-import figlet from 'figlet'
-import gradient from 'gradient-string'
+import cfonts from 'cfonts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(__dirname)
 
-function printBanner(text, gradientColors = ['cyan','blue']) {
-  const width = process.stdout.columns || 80
-  const height = process.stdout.rows || 24
-  let font = 'Standard'
+const fonts = ['block', 'simpleBlock', 'console', 'simple', 'small', 'tiny']
 
-  if (width < 50) font = 'Small'
-  else if (width < 100) font = 'Standard'
-  else font = 'Slant'
-
-  const rendered = figlet.textSync(text, { font, width, horizontalLayout: 'default', verticalLayout: 'default' })
-  const lines = rendered.split('\n')
-  const paddingTop = Math.max(Math.floor((height - lines.length) / 2), 0)
-
-  console.clear()
-  console.log('\n'.repeat(paddingTop) + gradient(gradientColors)(rendered))
+function autoFont(text, gradient = ['cyan', 'blue']) {
+  const termWidth = process.stdout.columns || 80
+  for (let font of fonts) {
+    const rendered = cfonts.render(text, { font, align: 'center', gradient, render: false })
+    const lines = rendered.split('\n')
+    const maxLine = Math.max(...lines.map(l => l.length))
+    if (maxLine <= termWidth) return font
+  }
+  return 'tiny'
 }
 
-function renderBanners() {
-  printBanner('Shiro', ['cyan','blue'])
-  printBanner('WhatsApp Multi-Bot Engine', ['blue','white'])
+function printCfonts(text, gradient) {
+  const font = autoFont(text, gradient)
+  cfonts.say(text, {
+    font,
+    align: 'center',
+    gradient,
+    letterSpacing: 1,
+    lineHeight: 1
+  })
 }
 
-renderBanners()
-
-process.stdout.on('resize', () => {
-  renderBanners()
-})
+printCfonts('Shiro', ['cyan', 'blue'])
+printCfonts('WhatsApp Multi-Bot Engine', ['blue', 'white'])
 
 let isWorking = false
 
@@ -45,11 +45,18 @@ async function launch(scripts) {
 
   for (const script of scripts) {
     const args = [join(__dirname, script), ...process.argv.slice(2)]
-    setupMaster({ exec: args[0], args: args.slice(1) })
+
+    setupMaster({
+      exec: args[0],
+      args: args.slice(1),
+    })
+
     let child = fork()
+
     child.on('exit', (code) => {
       isWorking = false
       launch(scripts)
+
       if (code === 0) return
       watchFile(args[0], () => {
         unwatchFile(args[0])
