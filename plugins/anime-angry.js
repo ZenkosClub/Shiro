@@ -1,15 +1,12 @@
 let handler = async (m, { conn, participants }) => {  
   let who
-
   if (m.mentionedJid && m.mentionedJid.length > 0) {
     who = m.mentionedJid[0]
-  } else if (participants && participants.length > 0) {
+  } else {
     const groupMembers = participants
       .filter(p => p.jid !== m.sender)
       .map(p => p.jid)
     who = groupMembers[Math.floor(Math.random() * groupMembers.length)]
-  } else {
-    who = m.sender
   }
 
   const videos = [
@@ -21,13 +18,13 @@ let handler = async (m, { conn, participants }) => {
   ]
   const video = videos[Math.floor(Math.random() * videos.length)]
 
-  const senderName = (participants ? participants.find(p => p.jid === m.sender) : null)?.notify 
-                     || (participants ? participants.find(p => p.jid === m.sender) : null)?.name 
-                     || m.sender.split('@')[0]
+  const getName = (jid) => {
+    const member = participants.find(p => p.jid === jid)
+    return member ? member.notify || member.name || jid.split('@')[0] : jid.split('@')[0]
+  }
 
-  const whoName = (participants ? participants.find(p => p.jid === who) : null)?.notify 
-                  || (participants ? participants.find(p => p.jid === who) : null)?.name 
-                  || who.split('@')[0]
+  const senderName = getName(m.sender)
+  const whoName = getName(who)
 
   return conn.sendMessage(m.chat, { 
     video: { url: video }, 
