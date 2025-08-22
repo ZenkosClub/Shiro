@@ -1,6 +1,8 @@
 let handler = async (m, { conn, participants }) => {  
-  let who
+  if (!m.isGroup) return
+
   const sender = m.sender || ''
+  let who
 
   if (m.mentionedJid && m.mentionedJid.length > 0) {
     who = m.mentionedJid[0]
