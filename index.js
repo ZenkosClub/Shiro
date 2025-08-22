@@ -12,19 +12,27 @@ const require = createRequire(__dirname)
 
 const fonts = ['block', 'simpleBlock', 'console', 'simple', 'small', 'tiny']
 
-function autoFont(text, gradient = ['cyan', 'blue']) {
+function autoFont(text, maxHeight = null) {
   const termWidth = process.stdout.columns || 80
+  const termHeight = process.stdout.rows || 24
+  const heightLimit = maxHeight || termHeight - 2
+
   for (let font of fonts) {
-    const rendered = cfonts.render(text, { font, align: 'center', gradient, render: false })
-    const lines = rendered.split('\n')
-    const maxLine = Math.max(...lines.map(l => l.length))
-    if (maxLine <= termWidth) return font
+    try {
+      const rendered = cfonts.render(text, { font, align: 'center', gradient: ['cyan','blue'], render: false })
+      const lines = rendered.split('\n')
+      const maxLine = Math.max(...lines.map(l => l.length))
+      const totalLines = lines.length
+      if (maxLine <= termWidth && totalLines <= heightLimit) return font
+    } catch (e) {
+      continue
+    }
   }
   return 'tiny'
 }
 
 function printCfonts(text, gradient) {
-  const font = autoFont(text, gradient)
+  const font = autoFont(text)
   cfonts.say(text, {
     font,
     align: 'center',
@@ -51,7 +59,7 @@ async function launch(scripts) {
       args: args.slice(1),
     })
 
-    let child = fork()
+    const child = fork()
 
     child.on('exit', (code) => {
       isWorking = false
