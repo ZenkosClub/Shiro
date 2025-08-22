@@ -6,9 +6,9 @@ let handler = async (m, { conn }) => {
   
   const who = m.mentionedJid[0]
   const videos = [
-    'https://telegra.ph/file/4a2c46c456b93e7dff8c3.mp4',
-    'https://telegra.ph/file/1a2c9db92cf2342c1d123.mp4',
-    'https://telegra.ph/file/7d3a9f8a1a2d456c94bde.mp4'
+    'https://raw.githubusercontent.com/ZenkosClub/animes/main/angry/angry1.mp4',
+    'https://raw.githubusercontent.com/ZenkosClub/animes/main/angry/angry1.mp4',
+    'https://raw.githubusercontent.com/ZenkosClub/animes/main/angry/angry1.mp4'
   ]
   const video = videos[Math.floor(Math.random() * videos.length)]
   
@@ -22,5 +22,5 @@ let handler = async (m, { conn }) => {
 
 handler.command = ['angry']
 handler.help = ['angry']
-handler.tags = ['reaction']
+handler.tags = ['anime']
 export default handler
