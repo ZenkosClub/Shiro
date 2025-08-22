@@ -1,18 +1,18 @@
 let handler = async (m, { conn, participants }) => {  
   if (!m.isGroup) return
 
-  const sender = m.sender || ''
+  const sender = m.sender || 'unknown'
   let who
 
   if (m.mentionedJid && m.mentionedJid.length > 0) {
     who = m.mentionedJid[0]
   } else {
-    const groupMembers = participants
-      .filter(p => p.jid !== sender)
-      .map(p => p.jid)
-    who = groupMembers.length > 0 
-      ? groupMembers[Math.floor(Math.random() * groupMembers.length)] 
-      : sender
+    const groupMembers = participants?.map(p => p.jid).filter(jid => jid !== sender) || []
+    if (groupMembers.length > 0) {
+      who = groupMembers[Math.floor(Math.random() * groupMembers.length)]
+    } else {
+      who = sender
+    }
   }
 
   const videos = [
