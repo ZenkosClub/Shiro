@@ -84,6 +84,9 @@ export async function handler(chatUpdate) {
 
   let m = smsg(this, chatUpdate.messages[chatUpdate.messages.length - 1]) || chatUpdate.messages[chatUpdate.messages.length - 1]
   if (!m || m.messageStubType) return
+
+  if (m.text) console.log(chalk.green(`[${m.chat}] ${m.sender}: ${m.text}`))
+
   m.exp = 0
   m.limit = false
 
@@ -163,6 +166,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${m.sender}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
