@@ -145,16 +145,27 @@ export async function handler(chatUpdate) {
     const slice = m.text.slice(match[0].length).trim()
     const parts = slice.length ? slice.split(/\s+/) : []
     const command = (parts.shift() || '').toLowerCase()
-    if (!p.command.some(c => typeof c === 'string' ? c.toLowerCase() === command : c.test(command))) return
-    const allowedPrivate = ['qr', 'code', 'setbotname', 'setbotimg', 'setautoread']
-    if (!m.isGroup && !allowedPrivate.includes(command) && !isOwner) return
-    if (m.isGroup && global.db.data.botGroups?.[m.chat] === false && !['grupo'].includes(command) && !isOwner) return
+    const isMatchCommand = p.command.some(c => typeof c === 'string' ? c.toLowerCase() === command : c.test(command))
+    if (!isMatchCommand) return
+
+    if (!m.isGroup && !['qr', 'code', 'setbotname', 'setbotimg', 'setautoread'].includes(command) && !isOwner) {
+      return
+    }
+
+    if (m.isGroup && global.db.data.botGroups && global.db.data.botGroups[m.chat] === false) {
+      if (!['grupo'].includes(command) && !isOwner) {
+        return m.reply(`El bot está desactivado en este grupo.\n\n> Pídele a un administrador que lo active.`)
+      }
+    }
+
     try {
       await p.handler.call(this, m, { match, conn: this, participants, groupMetadata, user: userInGroup, bot: botInGroup, isROwner, isOwner, isAdmin, isBotAdmin, isPrems, chatUpdate, __dirname: ___dirname, __filename, usedPrefix: match[0], command, args: parts, text: parts.join(' ') })
       m.plugin = p.name
       m.command = command
       m.args = parts
-    } catch {}
+    } catch (e) {
+      console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
+    }
   }))
 
   user.exp += m.exp
