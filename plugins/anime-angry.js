@@ -18,19 +18,10 @@ let handler = async (m, { conn, participants }) => {
   ]
   const video = videos[Math.floor(Math.random() * videos.length)]
 
-  const getName = (jid) => {
-    const member = participants.find(p => p.jid === jid)
-    return member ? member.notify || member.name || jid.split('@')[0] : jid.split('@')[0]
-  }
-
-  const senderName = getName(m.sender)
-  const whoName = getName(who)
-
   return conn.sendMessage(m.chat, { 
     video: { url: video }, 
-    caption: `😡 ᰔᩚ ${senderName} está *enojado* con ${whoName}`, 
-    mentions: [m.sender, who], 
-    contextInfo: { ...(m.contextInfo || {}) }
+    caption: `😡 ᰔᩚ @${m.sender.split('@')[0]} está *enojado* con @${who.split('@')[0]}`, 
+    contextInfo: { ...(m.contextInfo || {}), mentionedJid: [who, m.sender] } 
   }, { quoted: m })
 }
 
