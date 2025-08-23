@@ -92,25 +92,24 @@ export async function handler(chatUpdate) {
   if (!m || m.messageStubType) return
 
   if (m.text) {
-    let senderName = m.pushName || global.db.data.users[m.sender]?.name || "Shiro"
-    const senderNumber = m.sender.replace(/(@s\.whatsapp\.net|@lid)/, '')
+  let senderName = m.pushName || global.db.data.users[m.sender]?.name || "Shiro"
 
-    let chatName
-    if (m.isGroup) {
-      const g = await getGroupData(this, m.chat)
-      chatName = g.metadata?.subject || "Grupo sin nombre"
-    } else if (m.chat.endsWith('@broadcast')) {
-      chatName = "Canal"
-    } else {
-      chatName = "Privado"
-    }
-
-    console.log(
-      chalk.green(
-        `[${chatName}] ${senderName} (${senderNumber}): ${m.text}`
-      )
-    )
+  let chatName
+  if (m.isGroup) {
+    const g = await getGroupData(this, m.chat)
+    chatName = g.metadata?.subject || "Grupo sin nombre"
+  } else if (m.chat.endsWith('@broadcast')) {
+    chatName = "Canal"
+  } else {
+    chatName = "Privado"
   }
+
+  console.log(
+    chalk.green(
+      `[${chatName}] ${senderName}: ${m.text}`
+     )
+   )
+ }
 
   m.exp = 0
   m.limit = false
