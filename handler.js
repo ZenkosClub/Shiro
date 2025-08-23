@@ -85,7 +85,12 @@ export async function handler(chatUpdate) {
   let m = smsg(this, chatUpdate.messages[chatUpdate.messages.length - 1]) || chatUpdate.messages[chatUpdate.messages.length - 1]
   if (!m || m.messageStubType) return
 
-  if (m.text) console.log(chalk.green(`[${m.chat}] ${m.sender}: ${m.text}`))
+  if (m.text) {
+    let senderJid = this.decodeJid ? this.decodeJid(m.sender) : m.sender
+    let senderNumber = senderJid.replace(/(@s\.whatsapp\.net|@lid)/g, '')
+    let displayName = global.db.data.users[senderJid]?.name || senderNumber
+    console.log(chalk.green(`[${m.isGroup ? m.chat : 'privado'}] ${senderNumber} (${displayName}): ${m.text}`))
+  }
 
   m.exp = 0
   m.limit = false
@@ -166,7 +171,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${m.sender}`))
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${senderNumber}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
