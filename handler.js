@@ -4,20 +4,10 @@ import path, { join } from 'path'
 import { watchFile, unwatchFile, readFileSync, existsSync } from 'fs'
 import chalk from 'chalk'
 import PhoneNumber from 'awesome-phonenumber'
-const { proto, jidDecode } = (await import('@whiskeysockets/baileys')).default
+const { proto } = (await import('@whiskeysockets/baileys')).default
 
 const isNumber = x => typeof x === 'number' && !isNaN(x)
 const delay = ms => new Promise(r => setTimeout(r, ms))
-
-const decodeNum = (jid = '') => {
-  const d = jidDecode(jid) || {}
-  return d.user || jid.replace(/@.+/, '')
-}
-
-const formatNum = jid => {
-  const num = decodeNum(jid)
-  return '+' + new PhoneNumber(num, 'PE').getNumber('international').replace(/\s+/g, '')
-}
 
 let ownersCache = null
 const getAllOwners = () => {
@@ -88,6 +78,22 @@ const getSubBotConfig = (jid) => {
   }
 }
 
+async function formatSender(jid, conn) {
+  if (!jid) return ''
+  let bare = jid.includes('@') ? jid.split('@')[0] : jid
+  let num = '+' + bare
+  try {
+    num = PhoneNumber('+' + bare).getNumber('international') || num
+  } catch {}
+  let name
+  try {
+    name = await conn.getName(jid)
+  } catch {
+    name = ''
+  }
+  return name ? `${num} ~ ${name}` : num
+}
+
 export async function handler(chatUpdate) {
   if (!chatUpdate?.messages?.length) return
   this.msgqueque = this.msgqueque || []
@@ -100,16 +106,13 @@ export async function handler(chatUpdate) {
     let chatName
     if (m.isGroup) {
       const g = await getGroupData(this, m.chat)
-      let groupName = g.metadata.subject || 'Grupo sin nombre'
-      chatName = `${groupName} (${m.chat})`
-    } else if (m.chat.endsWith('@broadcast')) {
-      chatName = `Canal (${m.chat})`
+      chatName = `${g.metadata.subject || 'Grupo sin nombre'} (${m.chat})`
     } else {
-      chatName = `Privado (${m.chat})`
+      chatName = `Privado (${await formatSender(m.chat, this)})`
     }
 
-    let senderNumber = formatNum(m.sender)
-    console.log(chalk.green(`[${chatName}] ${senderNumber}: ${m.text}`))
+    const senderInfo = await formatSender(m.sender, this)
+    console.log(chalk.green(`[${chatName}] ${senderInfo}: ${m.text}`))
   }
 
   m.exp = 0
@@ -191,7 +194,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${formatNum(m.sender)}`))
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${await formatSender(m.sender, this)}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
