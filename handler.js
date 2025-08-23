@@ -13,8 +13,14 @@ const getAllOwners = () => {
   if (ownersCache) return ownersCache
   ownersCache = [
     global.conn.decodeJid(global.conn.user.id),
-    ...global.owner.flatMap(([n]) => [n.replace(/\D/g, '') + '@s.whatsapp.net', n.replace(/\D/g, '') + '@lid']),
-    ...(global.ownerLid || []).flatMap(([n]) => [n.replace(/\D/g, '') + '@s.whatsapp.net', n.replace(/\D/g, '') + '@lid'])
+    ...global.owner.flatMap(([n]) => [
+      n.replace(/\D/g, '') + '@s.whatsapp.net',
+      n.replace(/\D/g, '') + '@lid'
+    ]),
+    ...(global.ownerLid || []).flatMap(([n]) => [
+      n.replace(/\D/g, '') + '@s.whatsapp.net',
+      n.replace(/\D/g, '') + '@lid'
+    ])
   ]
   return ownersCache
 }
@@ -77,8 +83,6 @@ const getSubBotConfig = (jid) => {
   }
 }
 
-const formatSender = (jid) => '+' + jid.split('@')[0]
-
 export async function handler(chatUpdate) {
   if (!chatUpdate?.messages?.length) return
   this.msgqueque = this.msgqueque || []
@@ -88,10 +92,9 @@ export async function handler(chatUpdate) {
   if (!m || m.messageStubType) return
 
   if (m.text) {
-    let chatName
-    if (m.isGroup) chatName = `[${m.chat}]`
-    else chatName = formatSender(m.chat)
-    console.log(chalk.green(`${chatName} ${formatSender(m.sender)}: ${m.text}`))
+    const senderNumber = m.sender.replace(/(@s\.whatsapp\.net|@lid)/, '')
+    const chatType = m.isGroup ? 'Grupo' : m.chat.endsWith('@broadcast') ? 'Canal' : 'Privado'
+    console.log(chalk.green(`[${chatType}] ${m.chat} | ${senderNumber}: ${m.text}`))
   }
 
   m.exp = 0
@@ -159,9 +162,10 @@ export async function handler(chatUpdate) {
     if (!isMatchCommand) return
 
     if (!m.isGroup && !['qr', 'code', 'setbotname', 'setbotimg', 'setautoread'].includes(command) && !isOwner) return
-
     if (m.isGroup && global.db.data.botGroups && global.db.data.botGroups[m.chat] === false) {
-      if (!['grupo'].includes(command) && !isOwner) return m.reply(`El bot está desactivado en este grupo.\n\n> Pídele a un administrador que lo active.`)
+      if (!['grupo'].includes(command) && !isOwner) {
+        return m.reply(`El bot está desactivado en este grupo.\n\n> Pídele a un administrador que lo active.`)
+      }
     }
 
     try {
@@ -169,7 +173,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${formatSender(m.sender)}`))
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${m.sender.replace(/(@s\.whatsapp\.net|@lid)/, '')}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
