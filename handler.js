@@ -92,9 +92,24 @@ export async function handler(chatUpdate) {
   if (!m || m.messageStubType) return
 
   if (m.text) {
+    let senderName = m.pushName || global.db.data.users[m.sender]?.name || "Shiro"
     const senderNumber = m.sender.replace(/(@s\.whatsapp\.net|@lid)/, '')
-    const chatType = m.isGroup ? 'Grupo' : m.chat.endsWith('@broadcast') ? 'Canal' : 'Privado'
-    console.log(chalk.green(`[${chatType}] ${m.chat} | ${senderNumber}: ${m.text}`))
+
+    let chatName
+    if (m.isGroup) {
+      const g = await getGroupData(this, m.chat)
+      chatName = g.metadata?.subject || "Grupo sin nombre"
+    } else if (m.chat.endsWith('@broadcast')) {
+      chatName = "Canal"
+    } else {
+      chatName = "Privado"
+    }
+
+    console.log(
+      chalk.green(
+        `[${chatName}] ${senderName} (${senderNumber}): ${m.text}`
+      )
+    )
   }
 
   m.exp = 0
@@ -173,7 +188,11 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${m.sender.replace(/(@s\.whatsapp\.net|@lid)/, '')}`))
+      console.log(
+        chalk.cyan(
+          `[PLUGIN] ${p.name} ejecutado por ${m.pushName || global.db.data.users[m.sender]?.name || "Shiro"}`
+        )
+      )
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
