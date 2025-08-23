@@ -3,7 +3,6 @@ import { fileURLToPath } from 'url'
 import path, { join } from 'path'
 import { watchFile, unwatchFile, readFileSync, existsSync } from 'fs'
 import chalk from 'chalk'
-import PhoneNumber from 'awesome-phonenumber'
 const { proto } = (await import('@whiskeysockets/baileys')).default
 
 const isNumber = x => typeof x === 'number' && !isNaN(x)
@@ -78,21 +77,7 @@ const getSubBotConfig = (jid) => {
   }
 }
 
-async function formatSender(jid, conn) {
-  if (!jid) return ''
-  let bare = jid.includes('@') ? jid.split('@')[0] : jid
-  let num = '+' + bare
-  try {
-    num = PhoneNumber('+' + bare).getNumber('international') || num
-  } catch {}
-  let name
-  try {
-    name = await conn.getName(jid)
-  } catch {
-    name = ''
-  }
-  return name ? `${num} ~ ${name}` : num
-}
+const formatSender = (jid) => '+' + jid.split('@')[0]
 
 export async function handler(chatUpdate) {
   if (!chatUpdate?.messages?.length) return
@@ -104,15 +89,9 @@ export async function handler(chatUpdate) {
 
   if (m.text) {
     let chatName
-    if (m.isGroup) {
-      const g = await getGroupData(this, m.chat)
-      chatName = `${g.metadata.subject || 'Grupo sin nombre'} (${m.chat})`
-    } else {
-      chatName = `Privado (${await formatSender(m.chat, this)})`
-    }
-
-    const senderInfo = await formatSender(m.sender, this)
-    console.log(chalk.green(`[${chatName}] ${senderInfo}: ${m.text}`))
+    if (m.isGroup) chatName = `[${m.chat}]`
+    else chatName = formatSender(m.chat)
+    console.log(chalk.green(`${chatName} ${formatSender(m.sender)}: ${m.text}`))
   }
 
   m.exp = 0
@@ -179,14 +158,10 @@ export async function handler(chatUpdate) {
     const isMatchCommand = p.command.some(c => typeof c === 'string' ? c.toLowerCase() === command : c.test(command))
     if (!isMatchCommand) return
 
-    if (!m.isGroup && !['qr', 'code', 'setbotname', 'setbotimg', 'setautoread'].includes(command) && !isOwner) {
-      return
-    }
+    if (!m.isGroup && !['qr', 'code', 'setbotname', 'setbotimg', 'setautoread'].includes(command) && !isOwner) return
 
     if (m.isGroup && global.db.data.botGroups && global.db.data.botGroups[m.chat] === false) {
-      if (!['grupo'].includes(command) && !isOwner) {
-        return m.reply(`El bot está desactivado en este grupo.\n\n> Pídele a un administrador que lo active.`)
-      }
+      if (!['grupo'].includes(command) && !isOwner) return m.reply(`El bot está desactivado en este grupo.\n\n> Pídele a un administrador que lo active.`)
     }
 
     try {
@@ -194,7 +169,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${await formatSender(m.sender, this)}`))
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${formatSender(m.sender)}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
