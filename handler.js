@@ -90,7 +90,16 @@ export async function handler(chatUpdate) {
   let m = smsg(this, chatUpdate.messages[chatUpdate.messages.length - 1]) || chatUpdate.messages[chatUpdate.messages.length - 1]
   if (!m || m.messageStubType) return
 
-  if (m.text) console.log(chalk.green(`[${m.chat}] ${decodeNum(m.sender)}: ${m.text}`))
+  if (m.text) {
+  let chatName
+  if (m.isGroup) {
+    const g = await getGroupData(this, m.chat)
+    chatName = `${g.metadata.subject} (${m.chat})`
+  } else {
+    chatName = decodeNum(m.chat)
+  }
+  console.log(chalk.green(`[${chatName}] ${decodeNum(m.sender)}: ${m.text}`))
+}
 
   m.exp = 0
   m.limit = false
