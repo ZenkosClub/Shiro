@@ -94,11 +94,14 @@ export async function handler(chatUpdate) {
   let chatName
   if (m.isGroup) {
     const g = await getGroupData(this, m.chat)
-    chatName = `${g.metadata.subject} (${m.chat})`
+    let groupName = g.metadata.subject || 'Grupo sin nombre'
+    chatName = `${groupName} (${m.chat})`
   } else {
     chatName = decodeNum(m.chat)
   }
-  console.log(chalk.green(`[${chatName}] ${decodeNum(m.sender)}: ${m.text}`))
+
+  let senderNumber = '+' + decodeNum(m.sender)
+  console.log(chalk.green(`[${chatName}] ${senderNumber}: ${m.text}`))
 }
 
   m.exp = 0
