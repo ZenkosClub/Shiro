@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import path, { join } from 'path'
 import { watchFile, unwatchFile, readFileSync, existsSync } from 'fs'
 import chalk from 'chalk'
+import PhoneNumber from 'awesome-phonenumber'
 const { proto, jidDecode } = (await import('@whiskeysockets/baileys')).default
 
 const isNumber = x => typeof x === 'number' && !isNaN(x)
@@ -11,6 +12,11 @@ const delay = ms => new Promise(r => setTimeout(r, ms))
 const decodeNum = (jid = '') => {
   const d = jidDecode(jid) || {}
   return d.user || jid.replace(/@.+/, '')
+}
+
+const formatNum = jid => {
+  const num = decodeNum(jid)
+  return '+' + new PhoneNumber(num, 'PE').getNumber('international').replace(/\s+/g, '')
 }
 
 let ownersCache = null
@@ -91,18 +97,20 @@ export async function handler(chatUpdate) {
   if (!m || m.messageStubType) return
 
   if (m.text) {
-  let chatName
-  if (m.isGroup) {
-    const g = await getGroupData(this, m.chat)
-    let groupName = g.metadata.subject || 'Grupo sin nombre'
-    chatName = `${groupName} (${m.chat})`
-  } else {
-    chatName = decodeNum(m.chat)
-  }
+    let chatName
+    if (m.isGroup) {
+      const g = await getGroupData(this, m.chat)
+      let groupName = g.metadata.subject || 'Grupo sin nombre'
+      chatName = `${groupName} (${m.chat})`
+    } else if (m.chat.endsWith('@broadcast')) {
+      chatName = `Canal (${m.chat})`
+    } else {
+      chatName = `Privado (${m.chat})`
+    }
 
-  let senderNumber = '+' + decodeNum(m.sender)
-  console.log(chalk.green(`[${chatName}] ${senderNumber}: ${m.text}`))
-}
+    let senderNumber = formatNum(m.sender)
+    console.log(chalk.green(`[${chatName}] ${senderNumber}: ${m.text}`))
+  }
 
   m.exp = 0
   m.limit = false
@@ -183,7 +191,7 @@ export async function handler(chatUpdate) {
       m.plugin = p.name
       m.command = command
       m.args = parts
-      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${decodeNum(m.sender)}`))
+      console.log(chalk.cyan(`[PLUGIN] ${p.name} ejecutado por ${formatNum(m.sender)}`))
     } catch (e) {
       console.error(chalk.red(`[PLUGIN ERROR] ${p.name}`), e)
     }
