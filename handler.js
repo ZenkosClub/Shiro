@@ -86,7 +86,7 @@ const getSubBotConfig = (jid) => {
 export async function handler(chatUpdate) {
   if (!chatUpdate?.messages?.length) return
   this.msgqueque = this.msgqueque || []
-  this.ev.emit('messages.upsert', { messages: chatUpdate.messages, type: 'notify' })
+  this.pushMessage(chatUpdate.messages).catch(() => {})
 
   let m = smsg(this, chatUpdate.messages[chatUpdate.messages.length - 1]) || chatUpdate.messages[chatUpdate.messages.length - 1]
   if (!m || m.messageStubType) return
