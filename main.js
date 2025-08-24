@@ -14,7 +14,7 @@ import { tmpdir } from 'os'
 import { format } from 'util'
 import pino from 'pino'
 import { Boom } from '@hapi/boom'
-import { makeWASocket } from './lib/simple.js'
+import { makeWASocket, protoType, serialize } from './lib/simple.js'
 import { Low, JSONFile } from 'lowdb'
 import lodash from 'lodash' 
 import readline from 'readline'
@@ -32,6 +32,9 @@ const {
 } = await import('@whiskeysockets/baileys')
 
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
+
+protoType()
+serialize()
 
 global.__filename = function filename(pathURL = import.meta.url, rmPrefix = platform !== 'win32') {
   return rmPrefix ? /file:\/\/\//.test(pathURL) ? fileURLToPath(pathURL) : pathURL : pathToFileURL(pathURL).toString();
