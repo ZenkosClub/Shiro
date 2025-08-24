@@ -1,247 +1,561 @@
-import path from 'path'
-import { fileURLToPath } from 'url'
-import fs from 'fs'
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
+
+import './config.js'
+import { createRequire } from 'module'
+import path, { join } from 'path'
+import { fileURLToPath, pathToFileURL } from 'url'
+import { platform } from 'process'
+import * as ws from 'ws'
+import { readdirSync, statSync, unlinkSync, existsSync, readFileSync, watch } from 'fs'
+import yargs from 'yargs'
 import chalk from 'chalk'
-import fetch from 'node-fetch'
-import PhoneNumber from 'awesome-phonenumber'
-import util, { format } from 'util'
-import { fileTypeFromBuffer } from 'file-type'
-import { toAudio } from './converter.js'
-import store from './store.js'
+import syntaxerror from 'syntax-error'
+import { tmpdir } from 'os'
+import { format } from 'util'
+import pino from 'pino'
+import { Boom } from '@hapi/boom'
+import { makeWASocket } from './lib/simple.js'
+import { Low, JSONFile } from 'lowdb'
+import lodash from 'lodash' 
+import readline from 'readline'
+import NodeCache from 'node-cache'
+import qrcode from 'qrcode-terminal'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-/**
- * @type {import('@whiskeysockets/baileys')}
- */
+const { proto } = (await import('@whiskeysockets/baileys')).default
 const {
-    default: _makeWaSocket,
-    makeWALegacySocket,
-    proto,
-    downloadContentFromMessage,
-    jidDecode,
-    areJidsSameUser,
-    generateForwardMessageContent,
-    generateWAMessageFromContent,
-    prepareWAMessageMedia
-} = (await import('@whiskeysockets/baileys')).default
+  DisconnectReason,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  Browsers,
+  makeCacheableSignalKeyStore,
+  jidNormalizedUser,
+} = await import('@whiskeysockets/baileys')
 
-export function makeWASocket(connectionOptions, options = {}) {
-    let conn = (global.opts?.legacy ? makeWALegacySocket : _makeWaSocket)(connectionOptions)
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
 
-    let sock = Object.defineProperties(conn, {
-        chats: { value: { ...(options.chats || {}) }, writable: true },
-        decodeJid: {
-            value(jid) {
-                if (!jid || typeof jid !== 'string') return (!nullish(jid) && jid) || null
-                return jid.decodeJid()
-            }
-        },
-        logger: {
-            get() {
-                return {
-                    info(...args) {
-                        console.log(
-                            chalk.bold.bgRgb(51, 204, 51)('INFO '),
-                            `[${chalk.rgb(255, 255, 255)(new Date().toUTCString())}]:`,
-                            chalk.cyan(format(...args))
-                        )
-                    },
-                    error(...args) {
-                        console.log(
-                            chalk.bold.bgRgb(247, 38, 33)('ERROR '),
-                            `[${chalk.rgb(255, 255, 255)(new Date().toUTCString())}]:`,
-                            chalk.rgb(255, 38, 0)(format(...args))
-                        )
-                    },
-                    warn(...args) {
-                        console.log(
-                            chalk.bold.bgRgb(255, 153, 0)('WARNING '),
-                            `[${chalk.rgb(255, 255, 255)(new Date().toUTCString())}]:`,
-                            chalk.redBright(format(...args))
-                        )
-                    },
-                    trace(...args) {
-                        console.log(
-                            chalk.grey('TRACE '),
-                            `[${chalk.rgb(255, 255, 255)(new Date().toUTCString())}]:`,
-                            chalk.white(format(...args))
-                        )
-                    },
-                    debug(...args) {
-                        console.log(
-                            chalk.bold.bgRgb(66, 167, 245)('DEBUG '),
-                            `[${chalk.rgb(255, 255, 255)(new Date().toUTCString())}]:`,
-                            chalk.white(format(...args))
-                        )
-                    }
-                }
-            },
-            enumerable: true
-        },
-        getFile: {
-            async value(PATH, saveToFile = false) {
-                let res, filename
-                const data = Buffer.isBuffer(PATH) ? PATH
-                    : PATH instanceof ArrayBuffer ? Buffer.from(PATH)
-                    : /^data:.*?\/.*?;base64,/i.test(PATH) ? Buffer.from(PATH.split`,`[1], 'base64')
-                    : /^https?:\/\//.test(PATH) ? await (res = await fetch(PATH)).then(r => r.buffer())
-                    : fs.existsSync(PATH) ? (filename = PATH, fs.readFileSync(PATH))
-                    : typeof PATH === 'string' ? PATH
-                    : Buffer.alloc(0)
-                if (!Buffer.isBuffer(data)) throw new TypeError('Result is not a buffer')
-                const type = await fileTypeFromBuffer(data) || { mime: 'application/octet-stream', ext: '.bin' }
-                if (data && saveToFile && !filename) {
-                    filename = path.join(__dirname, '../tmp/' + new Date * 1 + '.' + type.ext)
-                    await fs.promises.writeFile(filename, data)
-                }
-                return {
-                    res, filename, ...type, data,
-                    deleteFile() { return filename && fs.promises.unlink(filename) }
-                }
-            },
-            enumerable: true
-        },
-        waitEvent: {
-            value(eventName, is = () => true, maxTries = 25) {
-                return new Promise((resolve, reject) => {
-                    let tries = 0
-                    let on = (...args) => {
-                        if (++tries > maxTries) reject('Max tries reached')
-                        else if (is()) {
-                            conn.ev.off(eventName, on)
-                            resolve(...args)
-                        }
-                    }
-                    conn.ev.on(eventName, on)
-                })
-            }
-        },
-        sendFile: {
-            async value(jid, path, filename = '', caption = '', quoted, ptt = false, options = {}) {
-                let type = await conn.getFile(path, true)
-                let { data: file, filename: pathFile } = type
-                let opt = {}
-                if (quoted) opt.quoted = quoted
-                if (!type) options.asDocument = true
-                let mtype = '', mimetype = options.mimetype || type.mime, convert
-                if (/webp/.test(type.mime) || (/image/.test(type.mime) && options.asSticker)) mtype = 'sticker'
-                else if (/image/.test(type.mime) || (/webp/.test(type.mime) && options.asImage)) mtype = 'image'
-                else if (/video/.test(type.mime)) mtype = 'video'
-                else if (/audio/.test(type.mime)) (
-                    convert = await toAudio(file, type.ext),
-                    file = convert.data,
-                    pathFile = convert.filename,
-                    mtype = 'audio',
-                    mimetype = options.mimetype || 'audio/ogg; codecs=opus'
-                )
-                else mtype = 'document'
-                if (options.asDocument) mtype = 'document'
-                delete options.asSticker; delete options.asLocation; delete options.asVideo; delete options.asDocument; delete options.asImage
-                let message = { ...options, caption, ptt, [mtype]: { url: pathFile }, mimetype, fileName: filename || pathFile.split('/').pop() }
-                let m
-                try { m = await conn.sendMessage(jid, message, { ...opt, ...options }) } catch { m = null }
-                finally { if (!m) m = await conn.sendMessage(jid, { ...message, [mtype]: file }, { ...opt, ...options }); file = null; return m }
-            },
-            enumerable: true
-        },
-        sendContact: {
-            async value(jid, data, quoted, options = {}) {
-                if (!Array.isArray(data[0]) && typeof data[0] === 'string') data = [data]
-                let contacts = []
-                for (let [number, name] of data) {
-                    number = number.replace(/[^0-9]/g, '')
-                    let njid = number + '@s.whatsapp.net'
-                    let biz = await conn.getBusinessProfile(njid).catch(_ => null) || {}
-                    let vcard = `
-BEGIN:VCARD
-VERSION:3.0
-N:;${name.replace(/\n/g, '\\n')};;;
-FN:${name.replace(/\n/g, '\\n')}
-TEL;type=CELL;type=VOICE;waid=${number}:${PhoneNumber('+' + number).getNumber('international')}${biz.description ? `
-X-WA-BIZ-NAME:${(conn.chats[njid]?.vname || conn.getName(njid) || name).replace(/\n/, '\\n')}
-X-WA-BIZ-DESCRIPTION:${biz.description.replace(/\n/g, '\\n')}
-`.trim() : ''}
-END:VCARD
-                    `.trim()
-                    contacts.push({ vcard, displayName: name })
-                }
-                return await conn.sendMessage(jid, { ...options, contacts: { ...options, displayName: (contacts.length >= 2 ? `${contacts.length} kontak` : contacts[0].displayName) || null, contacts } }, { quoted, ...options })
-            },
-            enumerable: true
-        },
-        reply: { value(jid, text = '', quoted, options = {}) { return Buffer.isBuffer(text) ? conn.sendFile(jid, text, 'file', '', quoted, false, options) : conn.sendMessage(jid, { ...options, text }, { quoted, ...options }) } },
-        cMod: {
-            value(jid, message, text = '', sender = conn.user.jid, options = {}) {
-                if (options.mentions && !Array.isArray(options.mentions)) options.mentions = [options.mentions]
-                let copy = message.toJSON()
-                delete copy.message.messageContextInfo; delete copy.message.senderKeyDistributionMessage
-                let mtype = Object.keys(copy.message)[0]; let msg = copy.message; let content = msg[mtype]
-                if (typeof content === 'string') msg[mtype] = text || content
-                else if (content.caption) content.caption = text || content.caption
-                else if (content.text) content.text = text || content.text
-                if (typeof content !== 'string') {
-                    msg[mtype] = { ...content, ...options }
-                    msg[mtype].contextInfo = { ...(content.contextInfo || {}), mentionedJid: options.mentions || content.contextInfo?.mentionedJid || [] }
-                }
-                if (copy.participant) sender = copy.participant = sender || copy.participant
-                else if (copy.key.participant) sender = copy.key.participant = sender || copy.key.participant
-                if (copy.key.remoteJid.includes('@s.whatsapp.net')) sender = sender || copy.key.remoteJid
-                else if (copy.key.remoteJid.includes('@broadcast')) sender = sender || copy.key.remoteJid
-                copy.key.remoteJid = jid
-                copy.key.fromMe = areJidsSameUser(sender, conn.user.id) || false
-                return proto.WebMessageInfo.fromObject(copy)
-            },
-            enumerable: true
-        },
-        copyNForward: {
-            async value(jid, message, forwardingScore = true, options = {}) {
-                let vtype
-                if (options.readViewOnce && message.message.viewOnceMessage?.message) {
-                    vtype = Object.keys(message.message.viewOnceMessage.message)[0]
-                    delete message.message.viewOnceMessage.message[vtype].viewOnce
-                    message.message = proto.Message.fromObject(JSON.parse(JSON.stringify(message.message.viewOnceMessage.message)))
-                    message.message[vtype].contextInfo = message.message.viewOnceMessage.contextInfo
-                }
-                let mtype = Object.keys(message.message)[0]
-                let m = generateForwardMessageContent(message, !!forwardingScore)
-                let ctype = Object.keys(m)[0]
-                if (forwardingScore && typeof forwardingScore === 'number' && forwardingScore > 1) m[ctype].contextInfo.forwardingScore += forwardingScore
-                m[ctype].contextInfo = { ...(message.message[mtype].contextInfo || {}), ...(m[ctype].contextInfo || {}) }
-                m = generateWAMessageFromContent(jid, m, { ...options, userJid: conn.user.jid })
-                await conn.relayMessage(jid, m.message, { messageId: m.key.id, additionalAttributes: { ...options } })
-                return m
-            },
-            enumerable: true
-        },
-        fakeReply: {
-            value(jid, text = '', fakeJid = this.user.jid, fakeText = '', fakeGroupJid, options) {
-                return conn.reply(jid, text, { key: { fromMe: areJidsSameUser(fakeJid, conn.user.id), participant: fakeJid, ...(fakeGroupJid ? { remoteJid: fakeGroupJid } : {}) }, message: { conversation: fakeText }, ...options })
-            }
-        },
-        downloadM: {
-            async value(message, type = 'buffer') {
-                let mtype = Object.keys(message.message)[0]
-                let stream = await downloadContentFromMessage(message.message[mtype], mtype.replace(/Message$/, ''))
-                let buffer = Buffer.from([])
-                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk])
-                return type === 'buffer' ? buffer : fs.promises.writeFile('./' + new Date() * 1, buffer)
-            }
+global.__filename = function filename(pathURL = import.meta.url, rmPrefix = platform !== 'win32') {
+  return rmPrefix ? /file:\/\/\//.test(pathURL) ? fileURLToPath(pathURL) : pathURL : pathToFileURL(pathURL).toString();
+};
+global.__dirname = function dirname(pathURL) {
+  return path.dirname(global.__filename(pathURL, true))
+};
+global.__require = function require(dir = import.meta.url) {
+  return createRequire(dir)
+}
+
+global.API = (name, path = '/', query = {}, apikeyqueryname) =>
+  (name in global.APIs ? global.APIs[name] : name) +
+  path +
+  (query || apikeyqueryname
+    ? '?' +
+      new URLSearchParams(
+        Object.entries({
+          ...query,
+          ...(apikeyqueryname ? { [apikeyqueryname]: global.APIKeys[name in global.APIs ? global.APIs[name] : name] } : {}),
+        })
+      )
+    : '')
+
+global.timestamp = { start: new Date() }
+
+const __dirname = global.__dirname(import.meta.url)
+
+global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
+global.prefix = new RegExp(
+  '^[' +
+    (opts['prefix'] || '‎z/#$%.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') +
+    ']'
+)
+
+global.db = new Low(new JSONFile(`storage/databases/database.json`))
+
+global.DATABASE = global.db
+global.loadDatabase = async function loadDatabase() {
+  if (global.db.READ)
+    return new Promise((resolve) =>
+      setInterval(async function () {
+        if (!global.db.READ) {
+          clearInterval(this)
+          resolve(global.db.data == null ? global.loadDatabase() : global.db.data)
         }
+      }, 1 * 1000)
+    )
+  if (global.db.data !== null) return
+  global.db.READ = true
+  await global.db.read().catch(console.error)
+  global.db.READ = null
+  global.db.data = {
+    users: {},
+    chats: {},
+    stats: {},
+    msgs: {},
+    sticker: {},
+    settings: {},
+    botGroups: {},
+    antiImg: {},
+    ...(global.db.data || {}),
+  }
+  global.db.chain = lodash.chain(global.db.data) 
+}
+
+global.authFile = `sessions`
+const { state, saveCreds } = await useMultiFileAuthState(global.authFile)
+
+const { version } = await fetchLatestBaileysVersion()
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+const question = (texto) => new Promise((resolver) => rl.question(texto, resolver))
+
+const logger = pino({
+  timestamp: () => `,"time":"${new Date().toJSON()}"`,
+}).child({ class: 'client' })
+logger.level = 'fatal'
+
+const connectionOptions = {
+  version: version,
+  logger,
+  printQRInTerminal: false,
+  auth: {
+    creds: state.creds,
+    keys: makeCacheableSignalKeyStore(state.keys, logger),
+  },
+  browser: Browsers.ubuntu('Chrome'),
+  markOnlineOnclientect: false,
+  generateHighQualityLinkPreview: true,
+  syncFullHistory: true,
+  retryRequestDelayMs: 10,
+  transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 10 },
+  maxMsgRetryCount: 15,
+  appStateMacVerification: {
+    patch: false,
+    snapshot: false,
+  },
+  getMessage: async (key) => {
+    const jid = jidNormalizedUser(key.remoteJid)
+    const msg = await store.loadMessage(jid, key.id)
+    return msg?.message || ''
+  },
+}
+
+global.conn = makeWASocket(connectionOptions)
+
+async function handleLogin() {
+  if (conn.authState.creds.registered) {
+    console.log(chalk.green('Sesión ya está registrada.'))
+    return
+  }
+
+  let loginMethod = await question(
+    chalk.green(
+      '¿Cómo deseas iniciar sesión?\nEscribe "qr" para escanear el código QR o "code" para usar un código de 8 dígitos:\n'
+    )
+  )
+
+  loginMethod = loginMethod.toLowerCase().trim()
+
+  if (loginMethod === 'code') {
+    let phoneNumber = await question(chalk.blue('Ingresa el número de WhatsApp donde estará el bot (incluye código país, ej: 521XXXXXXXXXX):\n'))
+    phoneNumber = phoneNumber.replace(/\D/g, '')
+
+    
+    if (phoneNumber.startsWith('52') && phoneNumber.length === 12) {
+      phoneNumber = `521${phoneNumber.slice(2)}`
+    } else if (phoneNumber.startsWith('52')) {
+      phoneNumber = `521${phoneNumber.slice(2)}`
+    } else if (phoneNumber.startsWith('0')) {
+      phoneNumber = phoneNumber.replace(/^0/, '')
+    }
+
+    if (typeof conn.requestPairingCode === 'function') {
+      try {
+        
+        if (conn.ws.readyState === ws.OPEN) {
+          let code = await conn.requestPairingCode(phoneNumber)
+          code = code?.match(/.{1,4}/g)?.join('-') || code
+          console.log(chalk.cyan('Tu código de emparejamiento es:', code))
+        } else {
+          console.log(chalk.red('La conexión no está abierta. Intenta nuevamente.'))
+        }
+      } catch (e) {
+        console.log(chalk.red('Error al solicitar código de emparejamiento:'), e.message || e)
+      }
+    } else {
+      console.log(chalk.red('Tu versión de Baileys no soporta emparejamiento por código.'))
+    }
+  } else {
+    console.log(chalk.yellow('Generando código QR, escanéalo con tu WhatsApp...'))
+    conn.ev.on('connection.update', ({ qr }) => {
+      if (qr) qrcode.generate(qr, { small: true })
+    })
+  }
+}
+
+await handleLogin()
+
+conn.isInit = false
+conn.well = false
+
+if (!opts['test']) {
+  if (global.db) {
+    setInterval(async () => {
+      if (global.db.data) await global.db.write()
+      if (opts['autocleartmp']) {
+        const tmp = [tmpdir(), 'tmp', 'serbot']
+        tmp.forEach((filename) => {
+          spawn('find', [filename, '-amin', '3', '-type', 'f', '-delete'])
+        })
+      }
+    }, 30 * 1000)
+  }
+}
+
+function clearTmp() {
+  const tmp = [join(__dirname, './tmp')]
+  const filename = []
+  tmp.forEach((dirname) => readdirSync(dirname).forEach((file) => filename.push(join(dirname, file))))
+  return filename.map((file) => {
+    const stats = statSync(file)
+    if (stats.isFile() && Date.now() - stats.mtimeMs >= 1000 * 60 * 3) return unlinkSync(file)
+    return false
+  })
+}
+
+setInterval(() => {
+  if (global.stopped === 'close' || !conn || !conn.user) return
+  clearTmp()
+}, 180000)
+
+async function connectionUpdate(update) {
+  const { connection, lastDisconnect, isNewLogin } = update
+  global.stopped = connection
+  if (isNewLogin) conn.isInit = true
+  const code =
+    lastDisconnect?.error?.output?.statusCode ||
+    lastDisconnect?.error?.output?.payload?.statusCode
+  if (code && code !== DisconnectReason.loggedOut && conn?.ws.socket == null) {
+    await global.reloadHandler(true).catch(console.error)
+    global.timestamp.connect = new Date()
+  }
+  if (global.db.data == null) await loadDatabase()
+  if (connection === 'open') {
+    console.log(chalk.yellow('Conectado correctamente.'))
+    if (!conn.startTime) {
+      conn.startTime = Date.now()
+    }
+  }
+  const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
+  if (reason === 405) {
+    if (existsSync('./sessions/creds.json')) unlinkSync('./sessions/creds.json')
+    console.log(
+      chalk.bold.redBright(
+        `Conexión reemplazada, por favor espera un momento. Reiniciando...\nSi aparecen errores, vuelve a iniciar con: npm start`
+      )
+    )
+    process.send('reset')
+  }
+  if (connection === 'close') {
+    switch (reason) {
+      case DisconnectReason.badSession:
+        conn.logger.error(`Sesión incorrecta, elimina la carpeta ${global.authFile} y escanea nuevamente.`)
+        break
+      case DisconnectReason.connectionClosed:
+      case DisconnectReason.connectionLost:
+      case DisconnectReason.timedOut:
+        conn.logger.warn(`Conexión perdida o cerrada, reconectando...`)
+        await global.reloadHandler(true).catch(console.error)
+        break
+      case DisconnectReason.connectionReplaced:
+        conn.logger.error(
+          `Conexión reemplazada, se abrió otra sesión. Cierra esta sesión primero.`
+        )
+        break
+      case DisconnectReason.loggedOut:
+        conn.logger.error(`Sesión cerrada, elimina la carpeta ${global.authFile} y escanea nuevamente.`)
+        break
+      case DisconnectReason.restartRequired:
+        conn.logger.info(`Reinicio necesario, reinicia el servidor si hay problemas.`)
+        await global.reloadHandler(true).catch(console.error)
+        break
+      default:
+        conn.logger.warn(`Desconexión desconocida: ${reason || ''} - Estado: ${connection || ''}`)
+        await global.reloadHandler(true).catch(console.error)
+        break
+    }
+  }
+}
+
+process.on('uncaughtException', console.error)
+
+let isInit = true
+let handler = await import('./handler.js')
+global.reloadHandler = async function (restartConn) {
+  try {
+    const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)
+    if (Handler && Object.keys(Handler).length) handler = Handler
+  } catch (e) {
+    console.error(e)
+  }
+
+  if (restartConn) {
+    try {
+      if (global.conn.ws) global.conn.ws.close()
+    } catch {}
+    global.conn.ev.removeAllListeners()
+    
+    
+    const preservedStartTime = global.conn.startTime
+    
+    global.conn = makeWASocket(connectionOptions)
+    
+   
+    if (preservedStartTime) {
+      global.conn.startTime = preservedStartTime
+    }
+    
+    isInit = true
+  }
+
+  if (!isInit) {
+    conn.ev.off('messages.upsert', conn.handler)
+    conn.ev.off('connection.update', conn.connectionUpdate)
+    conn.ev.off('creds.update', conn.credsUpdate)
+  }
+
+  conn.handler = handler.handler.bind(global.conn)
+  conn.connectionUpdate = connectionUpdate.bind(global.conn)
+  conn.credsUpdate = saveCreds.bind(global.conn, true)
+
+  conn.ev.on('messages.upsert', conn.handler)
+  conn.ev.on('connection.update', conn.connectionUpdate)
+  conn.ev.on('creds.update', conn.credsUpdate)
+
+  isInit = false
+  return true
+}
+
+const pluginFolder = global.__dirname(join(__dirname, './plugins/index'))
+const pluginFilter = (filename) => /\.js$/.test(filename)
+global.plugins = {}
+
+async function filesInit() {
+  for (const filename of readdirSync(pluginFolder).filter(pluginFilter)) {
+    try {
+      const file = global.__filename(join(pluginFolder, filename))
+      const module = await import(file)
+      
+     
+      let plugin = module.default || module
+      
+     
+      if (typeof plugin === 'function') {
+       
+        plugin = {
+          handler: plugin,
+          command: plugin.command || [],
+          tags: plugin.tags || [],
+          help: plugin.help || [],
+          disabled: false
+        }
+      }
+      
+      
+      if (plugin.command && typeof plugin.command === 'string') {
+        plugin.command = [plugin.command]
+      }
+      
+      global.plugins[filename] = plugin
+      
+    } catch (e) {
+      conn.logger.error(`Error cargando plugin ${filename}:`, e)
+      delete global.plugins[filename]
+    }
+  }
+}
+await filesInit()
+
+global.reload = async (_ev, filename) => {
+  if (pluginFilter(filename)) {
+    const dir = global.__filename(join(pluginFolder, filename), true)
+    if (filename in global.plugins) {
+      if (existsSync(dir)) conn.logger.info(`Updated plugin - '${filename}'`)
+      else {
+        conn.logger.warn(`Deleted plugin - '${filename}'`)
+        return delete global.plugins[filename]
+      }
+    } else conn.logger.info(`New plugin - '${filename}'`)
+
+    const err = syntaxerror(readFileSync(dir), filename, {
+      sourceType: 'module',
+      allowAwaitOutsideFunction: true,
+    })
+    if (err) conn.logger.error(`Syntax error while loading '${filename}':\n${format(err)}`)
+    else {
+      try {
+        const module = await import(`${global.__filename(dir)}?update=${Date.now()}`)
+        global.plugins[filename] = module.default || module
+      } catch (e) {
+        conn.logger.error(`Error requiring plugin '${filename}':\n${format(e)}`)
+      } finally {
+        global.plugins = Object.fromEntries(Object.entries(global.plugins).sort(([a], [b]) => a.localeCompare(b)))
+      }
+    }
+  }
+}
+Object.freeze(global.reload)
+
+watch(pluginFolder, global.reload)
+await global.reloadHandler()
+
+global.reconnectSubBots = async function () {
+  if (!global.conns || !Array.isArray(global.conns)) global.conns = []
+
+  const serbotDir = './serbots'
+  if (!existsSync(serbotDir)) {
+    console.log(chalk.yellow('No se encontró la carpeta "serbots"'))
+    return
+  }
+
+  const subBotFolders = readdirSync(serbotDir).filter(folder => {
+    const folderPath = join(serbotDir, folder)
+    return statSync(folderPath).isDirectory()
+  })
+
+  global.conns = global.conns.filter(conn => {
+    const folderPath = join(serbotDir, conn.user?.id?.split(':')[0] || '')
+    if (!existsSync(folderPath)) {
+      console.log(chalk.red(`La sesión del sub-bot "${conn.user?.id}" fue eliminada. Eliminando referencia en memoria.`))
+      return false
+    }
+    return true
+  })
+
+  if (subBotFolders.length === 0) {
+    console.log(chalk.yellow('No se encontraron sub-bots para reconectar'))
+    return
+  }
+
+  console.log(chalk.cyan(`Intentando reconectar ${subBotFolders.length} sub-bots activos.`))
+
+  for (const folder of subBotFolders) {
+    try {
+      const isAlreadyConnected = global.conns.some(conn =>
+        conn.user && conn.user.id && conn.user.id.includes(folder)
+      )
+
+      if (isAlreadyConnected) {
+        console.log(chalk.green(`Sub-bot "${folder}" ya está conectado.`))
+        continue
+      }
+
+      const botPath = join(serbotDir, folder)
+      const credsPath = join(botPath, 'creds.json')
+      if (!existsSync(credsPath)) {
+        console.log(chalk.red(`No se encontró creds.json en ${folder}, se omite.`))
+        continue
+      }
+
+      const serbotModule = await import('./plugins/socket-serbot.js')
+      if (serbotModule?.AYBot) {
+        const subConn = await serbotModule.AYBot({
+          pathAYBot: botPath,
+          m: null,
+          conn: null,
+          args: [],
+          usedPrefix: '.',
+          command: 'qr',
+          fromCommand: false
+        })
+        if (subConn) {
+          global.conns.push(subConn)
+          console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
+        } else {
+          console.log(chalk.red(`No se pudo inicializar el sub-bot "${folder}"`))
+        }
+      } else {
+        console.log(chalk.red(`No se pudo importar AYBot para el sub-bot "${folder}"`))
+      }
+
+      await new Promise(r => setTimeout(r, 2000))
+    } catch (e) {
+      console.log(chalk.red(`Error al reconectar el sub-bot "${folder}":`, e.message))
+    }
+  }
+
+  console.log(chalk.cyan('Proceso de reconexión de sub-bots completado'))
+}
+
+const originalConnectionUpdate = connectionUpdate
+connectionUpdate = async function (update) {
+  await originalConnectionUpdate.call(this, update)
+
+  if (update.connection === 'open' && !this.subBotsReconnected) {
+    this.subBotsReconnected = true
+    console.log(chalk.cyan('Bot principal conectado, iniciando reconexión automática de sub-bots.'))
+
+    setTimeout(async () => {
+      try {
+        await global.reloadHandler()
+        await global.reconnectSubBots()
+      } catch (e) {
+        console.error(chalk.red('Error al intentar reconectar sub-bots:'), e)
+      }
+    }, 5000)
+  }
+}
+
+setInterval(async () => {
+  try {
+    const serbotDir = './serbots'
+    if (!existsSync(serbotDir)) return
+
+    const subBotFolders = readdirSync(serbotDir).filter(folder => {
+      const folderPath = join(serbotDir, folder)
+      return statSync(folderPath).isDirectory()
     })
 
-    return sock
-}
+    global.conns = global.conns.filter(conn => {
+      const folderPath = join(serbotDir, conn.user?.id?.split(':')[0] || '')
+      if (!existsSync(folderPath)) {
+        console.log(chalk.red(`La sesión del sub-bot "${conn.user?.id}" fue eliminada. Eliminando referencia en memoria.`))
+        return false
+      }
+      return true
+    })
 
-function nullish(v) { return v === null || v === undefined }
+    console.log(chalk.cyan('Verificación periódica → Manteniendo sub-bots activos...'))
 
-export function smsg(conn, m) {
-    return {
-        ...m,
-        id: m.key?.id,
-        chat: m.key?.remoteJid,
-        sender: m.key?.participant || m.key?.remoteJid,
-        fromMe: m.key?.fromMe || false,
-        text: m.message?.conversation || m.message?.extendedTextMessage?.text || ''
+    for (const folder of subBotFolders) {
+      const isAlreadyConnected = global.conns.some(conn =>
+        conn.user && conn.user.id && conn.user.id.includes(folder)
+      )
+      if (!isAlreadyConnected) {
+        console.log(chalk.yellow(`Sub-bot "${folder}" no conectado. Intentando reconectar.`))
+        const botPath = join(serbotDir, folder)
+        const serbotModule = await import('./plugins/socket-serbot.js')
+        if (serbotModule?.AYBot) {
+          const subConn = await serbotModule.AYBot({
+            pathAYBot: botPath,
+            m: null,
+            conn: null,
+            args: [],
+            usedPrefix: '.',
+            command: 'qr',
+            fromCommand: false
+          })
+          if (subConn) {
+            global.conns.push(subConn)
+            console.log(chalk.green(`Sub-bot "${folder}" reconectado exitosamente`))
+          }
+        }
+        await new Promise(r => setTimeout(r, 2000))
+      }
     }
-}
+  } catch (e) {
+    console.error(chalk.red('Error en verificación periódica de sub-bots:'), e)
+  }
+}, 30_000)
+
+setTimeout(() => {
+  console.log(chalk.cyan('Iniciando reconexión automática inicial de sub-bots...'))
+  global.reconnectSubBots().catch(console.error)
+}, 10_000)
